@@ -3,7 +3,6 @@ from mongoengine import signals
 import inspect
 from functools import wraps
 
-mongoengine.connect('acts_as_state_machine',port=37017)
 
 def get_user_attributes(cls):
     boring = dir(type('dummy', (object,), {}))

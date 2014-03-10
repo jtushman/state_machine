@@ -4,6 +4,8 @@ from nose.tools import assert_raises
 import mongoengine
 from state_machine import acts_as_state_machine, before, State, Event, after, InvalidStateTransition
 
+mongoengine.connect('test_acts_as_state_machine',port=37017)
+
 def test_state_machine():
     @acts_as_state_machine
     class Person(mongoengine.Document):
