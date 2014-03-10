@@ -2,7 +2,7 @@ import nose
 from nose.tools import *
 from nose.tools import assert_raises
 import mongoengine
-from acts_as_state_machine import acts_as_state_machine, before, State, Event, after, InvalidStateTransition
+from state_machine import acts_as_state_machine, before, State, Event, after, InvalidStateTransition
 
 def test_state_machine():
     @acts_as_state_machine
