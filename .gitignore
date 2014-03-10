@@ -1,1 +1,40 @@
-.idea/
+*.py[co]
+
+# Packages
+*.egg
+*.egg-info
+dist
+build
+eggs
+parts
+bin
+var
+sdist
+develop-eggs
+.installed.cfg
+
+# Installer logs
+pip-log.txt
+
+# Unit test / coverage reports
+.coverage
+.tox
+
+# Translations
+*.mo
+
+# Mr Developer
+.mr.developer.cfg
+
+# PyCharm
+.idea/*
+.idea/libraries/sass_stdlib.xml
+
+# Distribution
+dist/*
+Flask_Classy.egg-info/*
+
+# Mac stuff
+.DS_Store
+
+docs/_build/html/Archive.zip

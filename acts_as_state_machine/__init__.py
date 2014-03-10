@@ -51,9 +51,6 @@ def acts_as_state_machine(original_class):
     class_dict = {'aasm_state': mongoengine.StringField(default='sleeping')}
 
     global _temp_callback_cache
-    #     print "keys: {}".format(_temp_callback_cache.keys())
-    #     print "before: {}".format(_temp_callback_cache['before'].keys())
-    #     print "after: {}".format(_temp_callback_cache['after'].keys())
 
     class_dict['callback_cache'] = _temp_callback_cache
 
@@ -97,23 +94,27 @@ def acts_as_state_machine(original_class):
                 def f(self):
                     #assert current state
                     if self.current_state not in event_description.from_states:
-                    #                         print "{} is not in {}".format(self.current_state, event_description.from_states)
                         raise InvalidStateTransition
 
-                        #fire before_change
-                    #                     print "callback cache: {}".format(self.__class__.callback_cache)
+                    # fire before_change
+                    failed = False
                     if event_name in self.__class__.callback_cache['before']:
                         for callback in self.__class__.callback_cache['before'][event_name]:
-                        #                             print "calling: {}".format(callback)
-                            callback(self)
+                            result = callback(self)
+                            if result is False:
+                                print "One of the 'before' callbacks returned false, breaking"
+                                failed = True
+                                break
+
 
                     #change state
-                    self.update(set__aasm_state=event_description.to_state.name)
-                    #fire after_change
-                    if event_name in self.__class__.callback_cache['after']:
-                        for callback in self.__class__.callback_cache['after'][event_name]:
-                        #                             print "calling: {}".format(callback)
-                            callback(self)
+                    if not failed:
+                        self.update(set__aasm_state=event_description.to_state.name)
+
+                        #fire after_change
+                        if event_name in self.__class__.callback_cache['after']:
+                            for callback in self.__class__.callback_cache['after'][event_name]:
+                                callback(self)
 
                 return f
             event_method_dict[member] = event_meta_method(member,value)
