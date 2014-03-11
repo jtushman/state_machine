@@ -1,11 +1,27 @@
+import functools
 import nose
+from nose.plugins.skip import SkipTest
 from nose.tools import *
 from nose.tools import assert_raises
-import mongoengine
+
+try:
+    import mongoengine
+    mongoengine.connect('test_acts_as_state_machine',port=37017)
+except ImportError:
+    mongoengine = None
+
 from state_machine import acts_as_state_machine, before, State, Event, after, InvalidStateTransition
 
-mongoengine.connect('test_acts_as_state_machine',port=37017)
+def requires_mongoengine(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kw):
+        if mongoengine is None:
+            raise SkipTest("mongoengine is not installed")
+        return func(*args, **kw)
+    return wrapper
 
+
+@requires_mongoengine
 def test_state_machine():
     @acts_as_state_machine
     class Person(mongoengine.Document):
@@ -49,6 +65,7 @@ def test_state_machine():
     assert person.is_sleeping
 
 
+@requires_mongoengine
 def test_invalid_state_transition():
 
     @acts_as_state_machine
@@ -72,6 +89,7 @@ def test_invalid_state_transition():
         person.sleep()
 
 
+@requires_mongoengine
 def test_before_callback_blocking_transition():
 
     @acts_as_state_machine
