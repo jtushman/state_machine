@@ -132,7 +132,7 @@ def test_invalid_state_transition():
 def test_before_callback_blocking_transition():
 
     @acts_as_state_machine
-    class Person(mongoengine.Document):
+    class Runner(mongoengine.Document):
         name = mongoengine.StringField(default='Billy')
 
         sleeping = State(initial=True)
@@ -147,13 +147,13 @@ def test_before_callback_blocking_transition():
         def check_sneakers(self):
             return False
 
-    person = Person()
-    person.save()
-    assert person.is_sleeping
-    person.run()
-    person.reload()
-    assert person.is_sleeping
-    assert not person.is_running
+    runner = Runner()
+    runner.save()
+    assert runner.is_sleeping
+    runner.run()
+    runner.reload()
+    assert runner.is_sleeping
+    assert not runner.is_running
 
 
 

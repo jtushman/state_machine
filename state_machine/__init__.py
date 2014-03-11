@@ -13,32 +13,49 @@ def get_user_attributes(cls):
 _temp_callback_cache = None
 
 def before(before_what):
+
     def wrapper(func):
+        frame = inspect.currentframe()
+        outer_frame = inspect.getouterframes(frame)
+        frame,filename,line_number,function_name,lines,index = outer_frame[1]
+        calling_class = function_name
 
         global _temp_callback_cache
         if _temp_callback_cache is None:
-            _temp_callback_cache = {'before': {before_what:[func]},'after': {}}
-        else:
-            if not before_what in _temp_callback_cache['before']:
-                _temp_callback_cache['before'][before_what] = [func]
-            else:
-                _temp_callback_cache['before'][before_what].append(func)
+            _temp_callback_cache = dict()
+
+        if calling_class not in _temp_callback_cache:
+            _temp_callback_cache[calling_class] = {'before':{},'after':{}}
+
+        if before_what not in _temp_callback_cache[calling_class]['before']:
+            _temp_callback_cache[calling_class]['before'][before_what] = []
+
+        _temp_callback_cache[calling_class]['before'][before_what].append(func)
+
 
         return func
     return wrapper
 
 
-def after(before_what):
+def after(after_what):
     def wrapper(func):
+
+        frame = inspect.currentframe()
+        outer_frame = inspect.getouterframes(frame)
+        frame,filename,line_number,function_name,lines,index = outer_frame[1]
+        calling_class = function_name
 
         global _temp_callback_cache
         if _temp_callback_cache is None:
-            _temp_callback_cache = {'after': {before_what:[func]},'before': {}}
-        else:
-            if not before_what in _temp_callback_cache['after']:
-                _temp_callback_cache['after'][before_what] = [func]
-            else:
-                _temp_callback_cache['after'][before_what].append(func)
+            _temp_callback_cache = dict()
+
+        if calling_class not in _temp_callback_cache:
+            _temp_callback_cache[calling_class] = {'before':{},'after':{}}
+
+        if after_what not in _temp_callback_cache[calling_class]['after']:
+            _temp_callback_cache[calling_class]['after'][after_what] = []
+
+        _temp_callback_cache[calling_class]['after'][after_what].append(func)
 
         return func
     return wrapper
@@ -103,8 +120,8 @@ def acts_as_state_machine(original_class):
 
                     # fire before_change
                     failed = False
-                    if event_name in self.__class__.callback_cache['before']:
-                        for callback in self.__class__.callback_cache['before'][event_name]:
+                    if event_name in self.__class__.callback_cache[class_name]['before']:
+                        for callback in self.__class__.callback_cache[class_name]['before'][event_name]:
                             result = callback(self)
                             if result is False:
                                 print "One of the 'before' callbacks returned false, breaking"
@@ -117,8 +134,8 @@ def acts_as_state_machine(original_class):
                         adaptor.update(self, event_description.to_state.name)
 
                         #fire after_change
-                        if event_name in self.__class__.callback_cache['after']:
-                            for callback in self.__class__.callback_cache['after'][event_name]:
+                        if event_name in self.__class__.callback_cache[class_name]['after']:
+                            for callback in self.__class__.callback_cache[class_name]['after'][event_name]:
                                 callback(self)
 
                 return f
@@ -153,7 +170,7 @@ class Event(object):
         self.to_state = kwargs.get('to_state',None)
         self.from_states = tuple()
         from_state_args = kwargs.get('from_states',tuple())
-        if isinstance(from_state_args,(tuple,list)):
+        if isinstance(from_state_args, (tuple,list)):
             self.from_states = tuple(from_state_args)
         else:
             self.from_states = (from_state_args,)
