@@ -39,7 +39,7 @@ class Person(mongoengine.Document):
         print "Zzzzzzzzzzzz"
 
     @after('sleep')
-    def snore(self):
+    def big_snore(self):
         print "Zzzzzzzzzzzzzzzzzzzzzz"
 
 person = Person()
