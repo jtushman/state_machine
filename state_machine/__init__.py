@@ -1,8 +1,7 @@
-import mongoengine
-from mongoengine import signals
 import inspect
 from functools import wraps
 
+from state_machine.orm import get_adaptor
 
 def get_user_attributes(cls):
     boring = dir(type('dummy', (object,), {}))
@@ -47,7 +46,9 @@ def after(before_what):
 def acts_as_state_machine(original_class):
 
     class_name = original_class.__name__
-    class_dict = {'aasm_state': mongoengine.StringField(default='sleeping')}
+    class_dict = {}
+    adaptor = get_adaptor(original_class)
+    class_dict.update(adaptor.extra_class_members())
 
     global _temp_callback_cache
 
@@ -108,7 +109,7 @@ def acts_as_state_machine(original_class):
 
                     #change state
                     if not failed:
-                        self.update(set__aasm_state=event_description.to_state.name)
+                        adaptor.update(self, event_description.to_state.name)
 
                         #fire after_change
                         if event_name in self.__class__.callback_cache['after']:
