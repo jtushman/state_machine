@@ -16,7 +16,7 @@ def get_adaptor(original_class):
 
 class NullAdaptor(object):
 
-    def extra_class_member(self):
+    def extra_class_members(self):
         return {}
 
     def update(self,document,state_name):

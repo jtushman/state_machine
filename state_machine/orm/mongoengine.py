@@ -7,14 +7,17 @@ except ImportError:
 
 class MongoAdaptor(object):
 
-    def extra_class_member(self):
+    def __init__(self,original_class):
+        pass
+
+    def extra_class_members(self):
         return {'aasm_state': mongoengine.StringField(default='sleeping')}
 
     def update(self,document,state_name):
         document.update(set__aasm_state=state_name)
 
 
-def get_mongo_adaptor(oringal_class):
-    if mongoengine is not None and isinstance(original_class, Document):
-        return MongoAdaptor()
+def get_mongo_adaptor(original_class):
+    if mongoengine is not None and issubclass(original_class, mongoengine.Document):
+        return MongoAdaptor
     return None
