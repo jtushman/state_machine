@@ -10,14 +10,19 @@ def get_adaptor(original_class):
     for get_adaptor in _adaptors:
         adaptor = get_adaptor(original_class)
         if adaptor is not None:
-            return adaptor(original_class)
-    return NullAdaptor()
+            break
+    else:
+        adaptor = NullAdaptor
+    return adaptor(original_class)
 
 
 class NullAdaptor(object):
 
-    def extra_class_members(self):
-        return {}
+    def __init__(self, original_class):
+        pass
+
+    def extra_class_members(self, initial_state):
+        return {"aasm_state": initial_state.name}
 
     def update(self,document,state_name):
-        pass
+        document.aasm_state = state_name

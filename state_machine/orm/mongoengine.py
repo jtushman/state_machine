@@ -8,10 +8,10 @@ except ImportError:
 class MongoAdaptor(object):
 
     def __init__(self,original_class):
-        pass
+        self.original_class = original_class
 
-    def extra_class_members(self):
-        return {'aasm_state': mongoengine.StringField(default='sleeping')}
+    def extra_class_members(self, initial_state):
+        return {'aasm_state': mongoengine.StringField(default=initial_state.name)}
 
     def update(self,document,state_name):
         document.update(set__aasm_state=state_name)
