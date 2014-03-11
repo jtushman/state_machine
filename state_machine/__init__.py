@@ -48,7 +48,6 @@ def acts_as_state_machine(original_class):
     class_name = original_class.__name__
     class_dict = {}
     adaptor = get_adaptor(original_class)
-    class_dict.update(adaptor.extra_class_members())
 
     global _temp_callback_cache
 
@@ -64,10 +63,15 @@ def acts_as_state_machine(original_class):
     class_dict.update(original_class.__dict__)
 
     # Get states
+    initial_state = None
     members = get_user_attributes(original_class)
     is_method_dict = dict()
     for member,value in members:
         if isinstance(value, State):
+            if value.initial:
+                if initial_state is not None:
+                    raise ValueError("multiple initial states!")
+                initial_state = value
 
             #add its name to itself:
             setattr(value,'name',member)
@@ -82,6 +86,7 @@ def acts_as_state_machine(original_class):
             is_method_dict[is_method_string] = is_method_builder(member)
 
     class_dict.update(is_method_dict)
+    class_dict.update(adaptor.extra_class_members(initial_state))
 
     # Get events
     members = get_user_attributes(original_class)
@@ -128,8 +133,8 @@ class InvalidStateTransition(Exception):
     pass
 
 class State(object):
-    def __init__(self, **kwargs):
-        pass
+    def __init__(self, initial=False, **kwargs):
+        self.initial = initial
 
     def __eq__(self,other):
         if isinstance(other,basestring):

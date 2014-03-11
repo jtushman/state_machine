@@ -65,6 +65,45 @@ def test_state_machine():
     assert person.is_sleeping
 
 
+def test_multiple_machines():
+    @acts_as_state_machine
+    class Person(object):
+        sleeping = State(initial=True)
+        running = State()
+        cleaning = State()
+
+        run = Event(from_states=sleeping, to_state=running)
+        cleanup = Event(from_states=running, to_state=cleaning)
+        sleep = Event(from_states=(running, cleaning), to_state=sleeping)
+
+        @before('run')
+        def on_run(self):
+            things_done.append("Person.ran")
+
+    @acts_as_state_machine
+    class Dog(object):
+        sleeping = State(initial=True)
+        running = State()
+
+        run = Event(from_states=sleeping, to_state=running)
+        sleep = Event(from_states=(running,), to_state=sleeping)
+
+        @before('run')
+        def on_run(self):
+            things_done.append("Dog.ran")
+
+
+    things_done = []
+    person = Person()
+    dog = Dog()
+    eq_(person.current_state,'sleeping')
+    eq_(dog.current_state,'sleeping')
+    assert person.is_sleeping
+    assert dog.is_sleeping
+    person.run()
+    eq_(things_done, ["Person.ran"])
+
+
 @requires_mongoengine
 def test_invalid_state_transition():
 
