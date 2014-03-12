@@ -14,7 +14,7 @@ class MongoAdaptor(object):
         return {'aasm_state': mongoengine.StringField(default=initial_state.name)}
 
     def update(self,document,state_name):
-        document.update(set__aasm_state=state_name)
+        document.aasm_state = state_name
 
 
 def get_mongo_adaptor(original_class):
