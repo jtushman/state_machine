@@ -1,5 +1,7 @@
 from __future__ import absolute_import
 
+
+from state_machine.orm.base import BaseAdaptor
 from state_machine.orm.mongoengine import get_mongo_adaptor
 #from state_machine.orm.sqlalchemy import get_sqlalchemy_adaptor
 
@@ -16,7 +18,9 @@ def get_adaptor(original_class):
     return adaptor(original_class)
 
 
-class NullAdaptor(object):
+
+
+class NullAdaptor(BaseAdaptor):
 
     def __init__(self, original_class):
         pass

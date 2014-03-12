@@ -4,8 +4,9 @@ try:
 except ImportError:
     mongoengine = None
 
+from state_machine.orm.base import BaseAdaptor
 
-class MongoAdaptor(object):
+class MongoAdaptor(BaseAdaptor):
 
     def __init__(self,original_class):
         self.original_class = original_class
