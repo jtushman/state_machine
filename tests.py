@@ -21,8 +21,56 @@ def requires_mongoengine(func):
     return wrapper
 
 
-@requires_mongoengine
+###################################################################################
+## Plain Old In Memory Tests
+###################################################################################
+
 def test_state_machine():
+    @acts_as_state_machine
+    class Robot():
+        name = 'R2-D2'
+
+        sleeping = State(initial=True)
+        running = State()
+        cleaning = State()
+
+        run = Event(from_states=sleeping, to_state=running)
+        cleanup = Event(from_states=running, to_state=cleaning)
+        sleep = Event(from_states=(running, cleaning), to_state=sleeping)
+
+        @before('sleep')
+        def do_one_thing(self):
+            print "{} is sleepy".format(self.name)
+
+        @before('sleep')
+        def do_another_thing(self):
+            print "{} is REALLY sleepy".format(self.name)
+
+        @after('sleep')
+        def snore(self):
+            print "Zzzzzzzzzzzz"
+
+        @after('sleep')
+        def snore(self):
+            print "Zzzzzzzzzzzzzzzzzzzzzz"
+
+
+    robot = Robot()
+    eq_(robot.current_state,'sleeping')
+    assert robot.is_sleeping
+    assert not robot.is_running
+    robot.run()
+    assert robot.is_running
+    robot.sleep()
+    assert robot.is_sleeping
+
+
+###################################################################################
+## Mongo Engine Tests
+###################################################################################
+
+@requires_mongoengine
+def test_mongoengine_state_machine():
     @acts_as_state_machine
     class Person(mongoengine.Document):
         name = mongoengine.StringField(default='Billy')
