@@ -10,6 +10,15 @@ try:
 except ImportError:
     mongoengine = None
 
+
+try:
+    import sqlalchemy
+    engine = sqlalchemy.create_engine('sqlite:///:memory:', echo=True)
+except ImportError:
+    sqlalchemy = None
+
+
+
 from state_machine import acts_as_state_machine, before, State, Event, after, InvalidStateTransition
 
 def requires_mongoengine(func):
@@ -20,6 +29,13 @@ def requires_mongoengine(func):
         return func(*args, **kw)
     return wrapper
 
+def requires_sqlalchemy(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kw):
+        if sqlalchemy is None:
+            raise SkipTest("sqlalchemy is not installed")
+        return func(*args, **kw)
+    return wrapper
 
 ###################################################################################
 ## Plain Old In Memory Tests
@@ -64,6 +80,68 @@ def test_state_machine():
     robot.sleep()
     assert robot.is_sleeping
 
+###################################################################################
+## SqlAlchemy Tests
+###################################################################################
+@requires_sqlalchemy
+def test_sqlalchemy_state_machine():
+
+    from sqlalchemy.ext.declarative import declarative_base
+    from sqlalchemy.orm import sessionmaker
+    Base = declarative_base()
+    @acts_as_state_machine
+    class Puppy(Base):
+        __tablename__ = 'puppies'
+        id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
+        name = sqlalchemy.Column(sqlalchemy.String)
+
+        sleeping = State(initial=True)
+        running = State()
+        cleaning = State()
+
+        run = Event(from_states=sleeping, to_state=running)
+        cleanup = Event(from_states=running, to_state=cleaning)
+        sleep = Event(from_states=(running, cleaning), to_state=sleeping)
+
+        @before('sleep')
+        def do_one_thing(self):
+            print "{} is sleepy".format(self.name)
+
+        @before('sleep')
+        def do_another_thing(self):
+            print "{} is REALLY sleepy".format(self.name)
+
+        @after('sleep')
+        def snore(self):
+            print "Zzzzzzzzzzzz"
+
+        @after('sleep')
+        def snore(self):
+            print "Zzzzzzzzzzzzzzzzzzzzzz"
+
+
+    Base.metadata.create_all(engine)
+
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    puppy = Puppy(name='Ralph')
+
+    eq_(puppy.current_state,Puppy.sleeping)
+    assert puppy.is_sleeping
+    assert not puppy.is_running
+    puppy.run()
+    assert puppy.is_running
+
+    session.add(puppy)
+    session.commit()
+
+    puppy2 = session.query(Puppy).filter_by(id=puppy.id)[0]
+
+    assert puppy2.is_running
+
+
+
 
 ###################################################################################
 ## Mongo Engine Tests
@@ -102,15 +180,18 @@ def test_mongoengine_state_machine():
 
     person = Person()
     person.save()
-    eq_(person.current_state,'sleeping')
+    eq_(person.current_state,Person.sleeping)
     assert person.is_sleeping
     assert not person.is_running
     person.run()
-    person.reload()
     assert person.is_running
     person.sleep()
-    person.reload()
     assert person.is_sleeping
+    person.run()
+    person.save()
+
+    person2 = Person.objects(id=person.id).first()
+    assert person2.is_running
 
 
 def test_multiple_machines():

@@ -1,9 +1,11 @@
 from __future__ import absolute_import
 
-from state_machine.orm.mongoengine import get_mongo_adaptor
-#from state_machine.orm.sqlalchemy import get_sqlalchemy_adaptor
 
-_adaptors = [get_mongo_adaptor]#,get_sqlalchemy_adaptor]
+from state_machine.orm.base import BaseAdaptor
+from state_machine.orm.mongoengine import get_mongo_adaptor
+from state_machine.orm.sqlalchemy import get_sqlalchemy_adaptor
+
+_adaptors = [get_mongo_adaptor, get_sqlalchemy_adaptor]
 
 def get_adaptor(original_class):
     # if none, then just keep state in memory
@@ -12,14 +14,14 @@ def get_adaptor(original_class):
         if adaptor is not None:
             break
     else:
-        adaptor = NullAdaptor
-    return adaptor(original_class)
+        adaptor = NullAdaptor(original_class)
+    return adaptor
 
 
-class NullAdaptor(object):
 
-    def __init__(self, original_class):
-        pass
+
+class NullAdaptor(BaseAdaptor):
+
 
     def extra_class_members(self, initial_state):
         return {"aasm_state": initial_state.name}
