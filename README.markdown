@@ -60,8 +60,6 @@ person.sleep()
 # Zzzzzzzzzzzzzzzzzzzzzz
 
 print person.is_sleeping                            # True
-
-
 ```
 
 
@@ -80,7 +78,7 @@ An _InvalidStateTransition Exception_ will be thrown if you try to move into an 
 
 ## ORM support
 
-We have basic support for mongoengine, and sqlalchemy.
+We have basic support for [mongoengine](http://mongoengine.org/), and [sqlalchemy](http://www.sqlalchemy.org/).
 
 ### Mongoengine
 
@@ -150,3 +148,7 @@ All you need to do is have sqlalchemy manage your object. For example:
 ##Issues / Roadmap:
 * Allow multiple state_machines per object
 * Be able to configure the state field
+
+## Thank you
+to [aasm](https://github.com/aasm/aasm) and ruby's [state_machine](https://github.com/pluginaweek/state_machine) and all other state machines that I loved before
+
