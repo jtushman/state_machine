@@ -19,6 +19,7 @@ def before(before_what):
         frame = inspect.currentframe()
         outer_frame = inspect.getouterframes(frame)
         frame,filename,line_number,function_name,lines,index = outer_frame[1]
+
         calling_class = function_name
 
         global _temp_callback_cache
@@ -64,8 +65,8 @@ def after(after_what):
 def acts_as_state_machine(original_class):
 
     adaptor = get_adaptor(original_class)
-
     global _temp_callback_cache
+
     return adaptor.modifed_class(original_class, _temp_callback_cache)
 
 

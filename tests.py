@@ -92,7 +92,7 @@ def test_sqlalchemy_state_machine():
     class Puppy(Base):
         __tablename__ = 'puppies'
         id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
-        name = sqlalchemy.Column(sqlalchemy.String, default='Ralph')
+        name = sqlalchemy.Column(sqlalchemy.String)
 
         sleeping = State(initial=True)
         running = State()
@@ -119,7 +119,10 @@ def test_sqlalchemy_state_machine():
             print "Zzzzzzzzzzzzzzzzzzzzzz"
 
 
-    puppy = Puppy()
+    Base.metadata.create_all(engine)
+
+    puppy = Puppy(name='Ralph')
+
     eq_(puppy.current_state,Puppy.sleeping)
     assert puppy.is_sleeping
     assert not puppy.is_running

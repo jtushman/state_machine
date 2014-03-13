@@ -8,9 +8,6 @@ from state_machine.orm.base import BaseAdaptor
 
 class MongoAdaptor(BaseAdaptor):
 
-    def __init__(self,original_class):
-        self.original_class = original_class
-
     def extra_class_members(self, initial_state):
         return {'aasm_state': mongoengine.StringField(default=initial_state.name)}
 
@@ -20,5 +17,5 @@ class MongoAdaptor(BaseAdaptor):
 
 def get_mongo_adaptor(original_class):
     if mongoengine is not None and issubclass(original_class, mongoengine.Document):
-        return MongoAdaptor
+        return MongoAdaptor(original_class)
     return None
