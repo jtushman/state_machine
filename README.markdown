@@ -1,11 +1,10 @@
 # state_machine
 state machine for humans
 
-There are two types of developers in this world: those that love state machines, and those that will eventually love
-state machines.
+There are two types of developers in this world: those who love state machines and those who *will* eventually.
 
-I fall in the first camp.  I think that is really important to have a very declarative way to define the states of
-an object.  And it is with this in mind that I developed `state_machine`
+I fall in the first camp.  I think it is really important to have a declarative way to define the states of
+an object. That's why I developed `state_machine`.
 
 
 ## Install
@@ -68,26 +67,26 @@ print person.is_sleeping                            # True
 
 ## Features
 
-* Before / After Callback Decorators
-You can add callback hooks that get executed before or after an event.  As seen as the example above.
+###Before / After Callback Decorators
+You can add callback hooks that get executed before or after an event (see example above).
 
-One important feature / thing to know is if any of the before events fires and exception or returns `False` the state
-transition will be blocked.  Also the after events will not be fired
+*Important:* if the _before_ event causes an exception or returns `False`, the state
+will not change (transition is blocked) and the _after_ event will not be executed.
 
-* Blocks invalid state transistions
-An InvalidStateTransition Exception will be thrown if you try to move into an invalid state from your current state
+###Blocks invalid state transitions
+An _InvalidStateTransition Exception_ will be thrown if you try to move into an invalid state.
 
 
 
 ## ORM support
 
-We have also have basic support for mongoengine, and sqlalchemy
+We have basic support for mongoengine, and sqlalchemy.
 
 ### Mongoengine
 
-Just have your object inherit from `mongoengine.Document` and state_machine will add a StringField for state
+Just have your object inherit from `mongoengine.Document` and state_machine will add a StringField for state.
 
-Note:  You need to explictly need to call #save to persist the document to the datastore
+*Note:* You must explicitly call #save to persist the document to the datastore.
 
 ```python
     @acts_as_state_machine
@@ -138,8 +137,7 @@ Note:  You need to explictly need to call #save to persist the document to the d
 
 ### Sqlalchemy
 
-Similarly we have support for sqlalchemy.  All you need to do is have your object be managed my sqlalchemy.
-For example:
+All you need to do is have sqlalchemy manage your object. For example:
 
 ```python
     from sqlalchemy.ext.declarative import declarative_base
@@ -149,6 +147,6 @@ For example:
        ...
 ```
 
-Issues / Roadmap:
+##Issues / Roadmap:
 * Allow multiple state_machines per object
-* Be able to configure the field that state is set
+* Be able to configure the state field
