@@ -87,6 +87,7 @@ def test_state_machine():
 def test_sqlalchemy_state_machine():
 
     from sqlalchemy.ext.declarative import declarative_base
+    from sqlalchemy.orm import sessionmaker
     Base = declarative_base()
     @acts_as_state_machine
     class Puppy(Base):
@@ -121,6 +122,9 @@ def test_sqlalchemy_state_machine():
 
     Base.metadata.create_all(engine)
 
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
     puppy = Puppy(name='Ralph')
 
     eq_(puppy.current_state,Puppy.sleeping)
@@ -128,8 +132,16 @@ def test_sqlalchemy_state_machine():
     assert not puppy.is_running
     puppy.run()
     assert puppy.is_running
-    puppy.sleep()
-    assert puppy.is_sleeping
+
+    session.add(puppy)
+    session.commit()
+
+    puppy2 = session.query(Puppy).filter_by(id=puppy.id)[0]
+
+    assert puppy2.is_running
+
+
+
 
 ###################################################################################
 ## Mongo Engine Tests

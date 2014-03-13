@@ -3,7 +3,7 @@ from setuptools import setup
 required_modules = ['mongoengine']
 
 setup(name='state_machine',
-      version='0.1.1',
+      version='0.2.0',
       description='Python State Machines for Humans',
       url='http://github.com/jtushman/state_machine',
       author='Jonathan Tushman',
