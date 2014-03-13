@@ -3,7 +3,7 @@ state machine for humans
 
 There are two types of developers in this world: those who love state machines and those who *will* eventually.
 
-I fall in the first camp.  I think it is really important to have a declarative way of defining the states of
+I fall in the first camp.  I think it is really important to have a declarative way to define the states of
 an object. That's why I developed `state_machine`.
 
 
@@ -73,7 +73,7 @@ You can add callback hooks that get executed before or after an event (see examp
 *Important:* if the _before_ event causes an exception or returns `False`, the state
 will not change (transition is blocked) and the _after_ event will not be executed.
 
-###Blocks invalid state transistions
+###Blocks invalid state transitions
 An _InvalidStateTransition Exception_ will be thrown if you try to move into an invalid state.
 
 
@@ -86,7 +86,7 @@ We have basic support for mongoengine, and sqlalchemy.
 
 Just have your object inherit from `mongoengine.Document` and state_machine will add a StringField for state.
 
-*Note:* You must explictly call #save to persist the document to the datastore.
+*Note:* You must explicitly call #save to persist the document to the datastore.
 
 ```python
     @acts_as_state_machine
