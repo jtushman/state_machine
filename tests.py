@@ -1,4 +1,5 @@
 import functools
+import os
 import nose
 from nose.plugins.skip import SkipTest
 from nose.tools import *
@@ -6,7 +7,10 @@ from nose.tools import assert_raises
 
 try:
     import mongoengine
-    mongoengine.connect('test_acts_as_state_machine',port=37017)
+    mongo_name = os.environ.get('AASM_MONGO_DB_NAME','test_acts_as_state_machine')
+    mongo_port = int(os.environ.get('AASM_MONGO_DB_PORT',27017))
+
+    mongoengine.connect(mongo_name, port=mongo_port)
 except ImportError:
     mongoengine = None
 
