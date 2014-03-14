@@ -3,7 +3,7 @@ from setuptools import setup
 required_modules = []
 
 setup(name='state_machine',
-      version='0.2.2',
+      version='0.2.3',
       description='Python State Machines for Humans',
       url='http://github.com/jtushman/state_machine',
       author='Jonathan Tushman',

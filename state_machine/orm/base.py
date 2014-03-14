@@ -2,6 +2,7 @@ from __future__ import absolute_import
 import inspect
 from state_machine.models import Event, State, InvalidStateTransition
 
+
 class BaseAdaptor(object):
 
     def __init__(self, original_class):
@@ -31,7 +32,6 @@ class BaseAdaptor(object):
                 is_method_dict[is_method_string] = is_method_builder(member)
         return is_method_dict, initial_state
 
-
     def process_events(self, original_class):
         _adaptor = self
         event_method_dict = dict()
@@ -55,7 +55,6 @@ class BaseAdaptor(object):
                                     failed = True
                                     break
 
-
                         #change state
                         if not failed:
                             _adaptor.update(self, event_description.to_state.name)
@@ -70,11 +69,10 @@ class BaseAdaptor(object):
                 event_method_dict[member] = event_meta_method(member, value)
         return event_method_dict
 
-
     def modifed_class(self, original_class, callback_cache):
 
         class_name = original_class.__name__
-        class_dict = {}
+        class_dict = dict()
 
         class_dict['callback_cache'] = callback_cache
 
@@ -102,5 +100,5 @@ class BaseAdaptor(object):
     def extra_class_members(self, initial_state):
         raise NotImplementedError
 
-    def update(self,document,state_name):
+    def update(self, document, state_name):
         raise NotImplementedError
