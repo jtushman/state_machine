@@ -1,3 +1,8 @@
+try:
+    string_type = basestring
+except NameError:
+    string_type = str
+
 class InvalidStateTransition(Exception):
     pass
 
@@ -6,8 +11,8 @@ class State(object):
     def __init__(self, initial=False, **kwargs):
         self.initial = initial
 
-    def __eq__(self, other):
-        if isinstance(other, basestring):
+    def __eq__(self,other):
+        if isinstance(other, string_type):
             return self.name == other
         elif isinstance(other, State):
             return self.name == other.name
