@@ -7,23 +7,23 @@ from nose.tools import assert_raises
 
 try:
     import mongoengine
-    mongo_name = os.environ.get('AASM_MONGO_DB_NAME','test_acts_as_state_machine')
-    mongo_port = int(os.environ.get('AASM_MONGO_DB_PORT',27017))
+
+    mongo_name = os.environ.get('AASM_MONGO_DB_NAME', 'test_acts_as_state_machine')
+    mongo_port = int(os.environ.get('AASM_MONGO_DB_PORT', 27017))
 
     mongoengine.connect(mongo_name, port=mongo_port)
 except ImportError:
     mongoengine = None
 
-
 try:
     import sqlalchemy
+
     engine = sqlalchemy.create_engine('sqlite:///:memory:', echo=True)
 except ImportError:
     sqlalchemy = None
 
-
-
 from state_machine import acts_as_state_machine, before, State, Event, after, InvalidStateTransition
+
 
 def requires_mongoengine(func):
     @functools.wraps(func)
@@ -31,7 +31,9 @@ def requires_mongoengine(func):
         if mongoengine is None:
             raise SkipTest("mongoengine is not installed")
         return func(*args, **kw)
+
     return wrapper
+
 
 def requires_sqlalchemy(func):
     @functools.wraps(func)
@@ -39,6 +41,7 @@ def requires_sqlalchemy(func):
         if sqlalchemy is None:
             raise SkipTest("sqlalchemy is not installed")
         return func(*args, **kw)
+
     return wrapper
 
 ###################################################################################
@@ -76,7 +79,7 @@ def test_state_machine():
 
 
     robot = Robot()
-    eq_(robot.current_state,'sleeping')
+    eq_(robot.current_state, 'sleeping')
     assert robot.is_sleeping
     assert not robot.is_running
     robot.run()
@@ -89,10 +92,11 @@ def test_state_machine():
 ###################################################################################
 @requires_sqlalchemy
 def test_sqlalchemy_state_machine():
-
     from sqlalchemy.ext.declarative import declarative_base
     from sqlalchemy.orm import sessionmaker
+
     Base = declarative_base()
+
     @acts_as_state_machine
     class Puppy(Base):
         __tablename__ = 'puppies'
@@ -123,7 +127,6 @@ def test_sqlalchemy_state_machine():
         def snore(self):
             print "Zzzzzzzzzzzzzzzzzzzzzz"
 
-
     Base.metadata.create_all(engine)
 
     Session = sessionmaker(bind=engine)
@@ -131,7 +134,7 @@ def test_sqlalchemy_state_machine():
 
     puppy = Puppy(name='Ralph')
 
-    eq_(puppy.current_state,Puppy.sleeping)
+    eq_(puppy.current_state, Puppy.sleeping)
     assert puppy.is_sleeping
     assert not puppy.is_running
     puppy.run()
@@ -143,8 +146,6 @@ def test_sqlalchemy_state_machine():
     puppy2 = session.query(Puppy).filter_by(id=puppy.id)[0]
 
     assert puppy2.is_running
-
-
 
 
 ###################################################################################
@@ -181,10 +182,9 @@ def test_mongoengine_state_machine():
         def snore(self):
             print "Zzzzzzzzzzzzzzzzzzzzzz"
 
-
     person = Person()
     person.save()
-    eq_(person.current_state,Person.sleeping)
+    eq_(person.current_state, Person.sleeping)
     assert person.is_sleeping
     assert not person.is_running
     person.run()
@@ -225,12 +225,11 @@ def test_multiple_machines():
         def on_run(self):
             things_done.append("Dog.ran")
 
-
     things_done = []
     person = Person()
     dog = Dog()
-    eq_(person.current_state,'sleeping')
-    eq_(dog.current_state,'sleeping')
+    eq_(person.current_state, 'sleeping')
+    eq_(dog.current_state, 'sleeping')
     assert person.is_sleeping
     assert dog.is_sleeping
     person.run()
@@ -239,7 +238,6 @@ def test_multiple_machines():
 
 @requires_mongoengine
 def test_invalid_state_transition():
-
     @acts_as_state_machine
     class Person(mongoengine.Document):
         name = mongoengine.StringField(default='Billy')
@@ -263,7 +261,6 @@ def test_invalid_state_transition():
 
 @requires_mongoengine
 def test_before_callback_blocking_transition():
-
     @acts_as_state_machine
     class Runner(mongoengine.Document):
         name = mongoengine.StringField(default='Billy')
@@ -287,7 +284,6 @@ def test_before_callback_blocking_transition():
     runner.reload()
     assert runner.is_sleeping
     assert not runner.is_running
-
 
 
 if __name__ == "__main__":
