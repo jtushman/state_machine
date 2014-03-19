@@ -23,6 +23,8 @@ setup(name='state_machine',
       license='MIT',
       packages=['state_machine'],
       zip_safe=False,
+      tests_require=['nose'],
+      test_suite='nose.collector',
       classifiers=[
           'Intended Audience :: Developers',
           'License :: OSI Approved :: MIT License',
@@ -30,4 +32,3 @@ setup(name='state_machine',
           'Programming Language :: Python :: 3',
           ],
       )
-
