@@ -47,7 +47,7 @@ class Person():
         print "Zzzzzzzzzzzzzzzzzzzzzz"
 
 person = Person()
-print person.current_state == person.sleeping       # True
+print person.current_state == Person.sleeping       # True
 print person.is_sleeping                            # True
 print person.is_running                             # False
 person.run()
@@ -118,7 +118,7 @@ Just have your object inherit from `mongoengine.Document` and state_machine will
 
     person = Person()
     person.save()
-    eq_(person.current_state,Person.sleeping)
+    eq_(person.current_state, Person.sleeping)
     assert person.is_sleeping
     assert not person.is_running
     person.run()
@@ -148,6 +148,9 @@ All you need to do is have sqlalchemy manage your object. For example:
 ##Issues / Roadmap:
 * Allow multiple state_machines per object
 * Be able to configure the state field
+
+## Questions / Issues
+Feel free to ping me on twitter: [@tushman](http://twitter.com/tushman) or add issues or PRs at [https://github.com/jtushman/state_machine](https://github.com/jtushman/state_machine)
 
 ## Thank you
 to [aasm](https://github.com/aasm/aasm) and ruby's [state_machine](https://github.com/pluginaweek/state_machine) and all other state machines that I loved before
