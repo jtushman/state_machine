@@ -63,19 +63,19 @@ def test_state_machine():
 
         @before('sleep')
         def do_one_thing(self):
-            print "{} is sleepy".format(self.name)
+            print("{} is sleepy".format(self.name))
 
         @before('sleep')
         def do_another_thing(self):
-            print "{} is REALLY sleepy".format(self.name)
+            print("{} is REALLY sleepy".format(self.name))
 
         @after('sleep')
         def snore(self):
-            print "Zzzzzzzzzzzz"
+            print("Zzzzzzzzzzzz")
 
         @after('sleep')
         def snore(self):
-            print "Zzzzzzzzzzzzzzzzzzzzzz"
+            print("Zzzzzzzzzzzzzzzzzzzzzz")
 
 
     robot = Robot()
@@ -113,19 +113,20 @@ def test_sqlalchemy_state_machine():
 
         @before('sleep')
         def do_one_thing(self):
-            print "{} is sleepy".format(self.name)
+            print("{} is sleepy".format(self.name))
 
         @before('sleep')
         def do_another_thing(self):
-            print "{} is REALLY sleepy".format(self.name)
+            print("{} is REALLY sleepy".format(self.name))
 
         @after('sleep')
         def snore(self):
-            print "Zzzzzzzzzzzz"
+            print("Zzzzzzzzzzzz")
 
         @after('sleep')
         def snore(self):
-            print "Zzzzzzzzzzzzzzzzzzzzzz"
+            print("Zzzzzzzzzzzzzzzzzzzzzz")
+            
 
     Base.metadata.create_all(engine)
 
@@ -168,19 +169,19 @@ def test_mongoengine_state_machine():
 
         @before('sleep')
         def do_one_thing(self):
-            print "{} is sleepy".format(self.name)
+            print("{} is sleepy".format(self.name))
 
         @before('sleep')
         def do_another_thing(self):
-            print "{} is REALLY sleepy".format(self.name)
+            print("{} is REALLY sleepy".format(self.name))
 
         @after('sleep')
         def snore(self):
-            print "Zzzzzzzzzzzz"
+            print("Zzzzzzzzzzzz")
 
         @after('sleep')
         def snore(self):
-            print "Zzzzzzzzzzzzzzzzzzzzzz"
+            print("Zzzzzzzzzzzzzzzzzzzzzz")
 
     person = Person()
     person.save()

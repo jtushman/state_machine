@@ -22,4 +22,13 @@ setup(name='state_machine',
       install_requires=required_modules,
       license='MIT',
       packages=['state_machine'],
-      zip_safe=False)
+      zip_safe=False,
+      tests_require=['nose'],
+      test_suite='nose.collector',
+      classifiers=[
+          'Intended Audience :: Developers',
+          'License :: OSI Approved :: MIT License',
+          'Programming Language :: Python :: 2.7',
+          'Programming Language :: Python :: 3',
+          ],
+      )

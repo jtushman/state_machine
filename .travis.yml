@@ -1,0 +1,11 @@
+language: python
+python: 2.7
+services: mongodb
+env:
+  - TOX_ENV=py27-mongo
+  - TOX_ENV=py33-mongo
+  - TOX_ENV=pypy-mongo
+install:
+  - pip install tox
+script:
+  - tox -e $TOX_ENV

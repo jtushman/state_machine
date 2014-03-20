@@ -51,7 +51,7 @@ class BaseAdaptor(object):
                             for callback in self.__class__.callback_cache[_adaptor.original_class.__name__]['before'][event_name]:
                                 result = callback(self)
                                 if result is False:
-                                    print "One of the 'before' callbacks returned false, breaking"
+                                    print("One of the 'before' callbacks returned false, breaking")
                                     failed = True
                                     break
 
