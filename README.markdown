@@ -1,6 +1,8 @@
 # state_machine
 state machine for humans
 
+[![Build Status](https://travis-ci.org/jtushman/state_machine.svg?branch=master)](https://travis-ci.org/jtushman/state_machine)
+
 There are two types of developers in this world: those who love state machines and those who *will* eventually.
 
 I fall in the first camp.  I think it is really important to have a declarative way to define the states of
