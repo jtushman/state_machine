@@ -47,10 +47,3 @@ def acts_as_state_machine(original_class):
     modified_class = adaptor.modifed_class(original_class, _temp_callback_cache)
     _temp_callback_cache = None
     return modified_class
-
-
-
-
-
-
-
