@@ -47,7 +47,8 @@ class BaseAdaptor(object):
 
                         # fire before_change
                         failed = False
-                        if event_name in self.__class__.callback_cache[_adaptor.original_class.__name__]['before']:
+                        if self.__class__.callback_cache and \
+                                event_name in self.__class__.callback_cache[_adaptor.original_class.__name__]['before']:
                             for callback in self.__class__.callback_cache[_adaptor.original_class.__name__]['before'][event_name]:
                                 result = callback(self)
                                 if result is False:
@@ -60,7 +61,8 @@ class BaseAdaptor(object):
                             _adaptor.update(self, event_description.to_state.name)
 
                             #fire after_change
-                            if event_name in self.__class__.callback_cache[_adaptor.original_class.__name__]['after']:
+                            if self.__class__.callback_cache and \
+                                    event_name in self.__class__.callback_cache[_adaptor.original_class.__name__]['after']:
                                 for callback in self.__class__.callback_cache[_adaptor.original_class.__name__]['after'][event_name]:
                                     callback(self)
 
