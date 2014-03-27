@@ -87,6 +87,29 @@ def test_state_machine():
     robot.sleep()
     assert robot.is_sleeping
 
+
+def test_state_machine_no_callbacks():
+    @acts_as_state_machine
+    class Robot():
+        name = 'R2-D2'
+
+        sleeping = State(initial=True)
+        running = State()
+        cleaning = State()
+
+        run = Event(from_states=sleeping, to_state=running)
+        cleanup = Event(from_states=running, to_state=cleaning)
+        sleep = Event(from_states=(running, cleaning), to_state=sleeping)
+
+    robot = Robot()
+    eq_(robot.current_state, 'sleeping')
+    assert robot.is_sleeping
+    assert not robot.is_running
+    robot.run()
+    assert robot.is_running
+    robot.sleep()
+    assert robot.is_sleeping
+
 ###################################################################################
 ## SqlAlchemy Tests
 ###################################################################################
@@ -147,6 +170,51 @@ def test_sqlalchemy_state_machine():
     puppy2 = session.query(Puppy).filter_by(id=puppy.id)[0]
 
     assert puppy2.is_running
+
+
+@requires_sqlalchemy
+def test_sqlalchemy_state_machine_no_callbacks():
+    ''' This is to make sure that the state change will still work even if no callbacks are registered.
+    '''
+    from sqlalchemy.ext.declarative import declarative_base
+    from sqlalchemy.orm import sessionmaker
+
+    Base = declarative_base()
+
+    @acts_as_state_machine
+    class Kitten(Base):
+        __tablename__ = 'kittens'
+        id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
+        name = sqlalchemy.Column(sqlalchemy.String)
+
+        sleeping = State(initial=True)
+        running = State()
+        cleaning = State()
+
+        run = Event(from_states=sleeping, to_state=running)
+        cleanup = Event(from_states=running, to_state=cleaning)
+        sleep = Event(from_states=(running, cleaning), to_state=sleeping)
+
+
+    Base.metadata.create_all(engine)
+
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    kitten = Kitten(name='Kit-Kat')
+
+    eq_(kitten.current_state, Kitten.sleeping)
+    assert kitten.is_sleeping
+    assert not kitten.is_running
+    kitten.run()
+    assert kitten.is_running
+
+    session.add(kitten)
+    session.commit()
+
+    kitten2 = session.query(Kitten).filter_by(id=kitten.id)[0]
+
+    assert kitten2.is_running
 
 
 ###################################################################################
