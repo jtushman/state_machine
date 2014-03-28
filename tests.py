@@ -7,13 +7,13 @@ from nose.tools import assert_raises
 
 try:
     import mongoengine
-
-    mongo_name = os.environ.get('AASM_MONGO_DB_NAME', 'test_acts_as_state_machine')
-    mongo_port = int(os.environ.get('AASM_MONGO_DB_PORT', 27017))
-
-    mongoengine.connect(mongo_name, port=mongo_port)
 except ImportError:
     mongoengine = None
+
+def establish_mongo_connection():
+    mongo_name = os.environ.get('AASM_MONGO_DB_NAME', 'test_acts_as_state_machine')
+    mongo_port = int(os.environ.get('AASM_MONGO_DB_PORT', 27017))
+    mongoengine.connect(mongo_name, port=mongo_port)
 
 try:
     import sqlalchemy
@@ -109,6 +109,44 @@ def test_state_machine_no_callbacks():
     assert robot.is_running
     robot.sleep()
     assert robot.is_sleeping
+
+
+def test_multiple_machines():
+    @acts_as_state_machine
+    class Person(object):
+        sleeping = State(initial=True)
+        running = State()
+        cleaning = State()
+
+        run = Event(from_states=sleeping, to_state=running)
+        cleanup = Event(from_states=running, to_state=cleaning)
+        sleep = Event(from_states=(running, cleaning), to_state=sleeping)
+
+        @before('run')
+        def on_run(self):
+            things_done.append("Person.ran")
+
+    @acts_as_state_machine
+    class Dog(object):
+        sleeping = State(initial=True)
+        running = State()
+
+        run = Event(from_states=sleeping, to_state=running)
+        sleep = Event(from_states=(running,), to_state=sleeping)
+
+        @before('run')
+        def on_run(self):
+            things_done.append("Dog.ran")
+
+    things_done = []
+    person = Person()
+    dog = Dog()
+    eq_(person.current_state, 'sleeping')
+    eq_(dog.current_state, 'sleeping')
+    assert person.is_sleeping
+    assert dog.is_sleeping
+    person.run()
+    eq_(things_done, ["Person.ran"])
 
 ###################################################################################
 ## SqlAlchemy Tests
@@ -223,6 +261,7 @@ def test_sqlalchemy_state_machine_no_callbacks():
 
 @requires_mongoengine
 def test_mongoengine_state_machine():
+
     @acts_as_state_machine
     class Person(mongoengine.Document):
         name = mongoengine.StringField(default='Billy')
@@ -251,6 +290,8 @@ def test_mongoengine_state_machine():
         def snore(self):
             print("Zzzzzzzzzzzzzzzzzzzzzz")
 
+    establish_mongo_connection()
+
     person = Person()
     person.save()
     eq_(person.current_state, Person.sleeping)
@@ -267,44 +308,6 @@ def test_mongoengine_state_machine():
     assert person2.is_running
 
 
-def test_multiple_machines():
-    @acts_as_state_machine
-    class Person(object):
-        sleeping = State(initial=True)
-        running = State()
-        cleaning = State()
-
-        run = Event(from_states=sleeping, to_state=running)
-        cleanup = Event(from_states=running, to_state=cleaning)
-        sleep = Event(from_states=(running, cleaning), to_state=sleeping)
-
-        @before('run')
-        def on_run(self):
-            things_done.append("Person.ran")
-
-    @acts_as_state_machine
-    class Dog(object):
-        sleeping = State(initial=True)
-        running = State()
-
-        run = Event(from_states=sleeping, to_state=running)
-        sleep = Event(from_states=(running,), to_state=sleeping)
-
-        @before('run')
-        def on_run(self):
-            things_done.append("Dog.ran")
-
-    things_done = []
-    person = Person()
-    dog = Dog()
-    eq_(person.current_state, 'sleeping')
-    eq_(dog.current_state, 'sleeping')
-    assert person.is_sleeping
-    assert dog.is_sleeping
-    person.run()
-    eq_(things_done, ["Person.ran"])
-
-
 @requires_mongoengine
 def test_invalid_state_transition():
     @acts_as_state_machine
@@ -319,6 +322,7 @@ def test_invalid_state_transition():
         cleanup = Event(from_states=running, to_state=cleaning)
         sleep = Event(from_states=(running, cleaning), to_state=sleeping)
 
+    establish_mongo_connection()
     person = Person()
     person.save()
     assert person.is_sleeping
@@ -346,6 +350,7 @@ def test_before_callback_blocking_transition():
         def check_sneakers(self):
             return False
 
+    establish_mongo_connection()
     runner = Runner()
     runner.save()
     assert runner.is_sleeping

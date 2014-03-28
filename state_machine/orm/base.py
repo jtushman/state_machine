@@ -8,10 +8,14 @@ class BaseAdaptor(object):
     def __init__(self, original_class):
         self.original_class = original_class
 
+    def get_potential_state_machine_attributes(self, clazz):
+        return inspect.getmembers(clazz)
+
     def process_states(self, original_class):
         initial_state = None
         is_method_dict = dict()
-        for member, value in inspect.getmembers(original_class):
+        for member, value in self.get_potential_state_machine_attributes(original_class):
+
             if isinstance(value, State):
                 if value.initial:
                     if initial_state is not None:
@@ -30,12 +34,13 @@ class BaseAdaptor(object):
                     return property(f)
 
                 is_method_dict[is_method_string] = is_method_builder(member)
+
         return is_method_dict, initial_state
 
     def process_events(self, original_class):
         _adaptor = self
         event_method_dict = dict()
-        for member, value in inspect.getmembers(original_class):
+        for member, value in self.get_potential_state_machine_attributes(original_class):
             if isinstance(value, Event):
                 # Create event methods
 
