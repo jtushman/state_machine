@@ -14,7 +14,7 @@ def get_packages():
 required_modules = []
 
 setup(name='state_machine',
-      version='0.2.7',
+      version='0.2.8',
       description='Python State Machines for Humans',
       url='http://github.com/jtushman/state_machine',
       author='Jonathan Tushman',
