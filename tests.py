@@ -187,7 +187,7 @@ def test_sqlalchemy_state_machine():
         @after('sleep')
         def snore(self):
             print("Zzzzzzzzzzzzzzzzzzzzzz")
-            
+
 
     Base.metadata.create_all(engine)
 
@@ -253,6 +253,48 @@ def test_sqlalchemy_state_machine_no_callbacks():
     kitten2 = session.query(Kitten).filter_by(id=kitten.id)[0]
 
     assert kitten2.is_running
+
+
+@requires_sqlalchemy
+def test_sqlalchemy_state_machine_using_initial_state():
+    ''' This is to make sure that the database will save the object with the initial state.
+    '''
+    from sqlalchemy.ext.declarative import declarative_base
+    from sqlalchemy.orm import sessionmaker
+
+    Base = declarative_base()
+
+    @acts_as_state_machine
+    class Penguin(Base):
+        __tablename__ = 'penguins'
+        id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
+        name = sqlalchemy.Column(sqlalchemy.String)
+
+        sleeping = State(initial=True)
+        running = State()
+        cleaning = State()
+
+        run = Event(from_states=sleeping, to_state=running)
+        cleanup = Event(from_states=running, to_state=cleaning)
+        sleep = Event(from_states=(running, cleaning), to_state=sleeping)
+
+
+    Base.metadata.create_all(engine)
+
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    # Note: No state transition occurs between the initial state and when it's saved to the database.
+    penguin = Penguin(name='Tux')
+    eq_(penguin.current_state, Penguin.sleeping)
+    assert penguin.is_sleeping
+
+    session.add(penguin)
+    session.commit()
+
+    penguin2 = session.query(Penguin).filter_by(id=penguin.id)[0]
+
+    assert penguin2.is_sleeping
 
 
 ###################################################################################

@@ -41,7 +41,7 @@ class SqlAlchemyAdaptor(BaseAdaptor):
 
         def new_init(self, *args, **kwargs):
             orig_init(self, *args, **kwargs)
-            self.aasm_state = initial_state
+            self.aasm_state = initial_state.name
 
         class_dict['__init__'] = new_init
 
