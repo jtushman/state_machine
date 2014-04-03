@@ -189,8 +189,3 @@ that I loved before
 .. _aasm: https://github.com/aasm/aasm
 .. _state\_machine: https://github.com/pluginaweek/state_machine
 
-Contents:
-
-.. toctree::
-   :maxdepth: 2
-
