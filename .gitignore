@@ -38,3 +38,5 @@ Flask_Classy.egg-info/*
 .DS_Store
 
 docs/_build/html/Archive.zip
+docs/_build
+
