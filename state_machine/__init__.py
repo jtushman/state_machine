@@ -1,6 +1,6 @@
 import inspect
 
-from state_machine.models import Event, State, InvalidStateTransition
+from state_machine.models import Event, State, StateMachine, InvalidStateTransition
 from state_machine.orm import get_adaptor
 
 _temp_callback_cache = None
@@ -42,8 +42,16 @@ def after(after_what):
 
 
 def acts_as_state_machine(original_class):
-    adaptor = get_adaptor(original_class)
-    global _temp_callback_cache
-    modified_class = adaptor.modifed_class(original_class, _temp_callback_cache)
-    _temp_callback_cache = None
-    return modified_class
+
+    for member, value in inspect.getmembers(original_class):
+
+        if isinstance(value, StateMachine):
+            name, machine = member, value
+            setattr(machine, 'name', name)
+
+            # add extra_class memebers is necessary as such the case for mongo and sqlalchemy
+            for name in machine.extra_class_members:
+                setattr(original_class, name, machine.extra_class_members[name])
+
+    return original_class
+

@@ -3,6 +3,11 @@ try:
 except NameError:
     string_type = str
 
+try:
+    import mongoengine
+except ImportError as e:
+    mongoengine = None
+
 class InvalidStateTransition(Exception):
     pass
 
@@ -11,7 +16,7 @@ class State(object):
     def __init__(self, initial=False, **kwargs):
         self.initial = initial
 
-    def __eq__(self,other):
+    def __eq__(self, other):
         if isinstance(other, string_type):
             return self.name == other
         elif isinstance(other, State):
@@ -26,10 +31,135 @@ class State(object):
 
 class Event(object):
     def __init__(self, **kwargs):
-        self.to_state = kwargs.get('to_state', None)
+        self.to_state = kwargs['to_state']
         self.from_states = tuple()
         from_state_args = kwargs.get('from_states', tuple())
         if isinstance(from_state_args, (tuple, list)):
             self.from_states = tuple(from_state_args)
         else:
             self.from_states = (from_state_args,)
+
+        if self.to_state is None:
+            raise TypeError("Expected to_state to be set")
+
+        if self.from_states is None or len(self.from_states) == 0:
+            raise TypeError("Expected From States to be set")
+
+
+class AbstractStateMachine(object):
+    """ Collection of states and events
+    """
+
+    def add_event(self, value):
+        self.events[value.name] = value
+
+    def add_state(self, state):
+        self.states[state.name] = state
+
+        # set initial value
+        if state.initial:
+            if self.initial_state is not None:
+                raise ValueError("multiple initial states!")
+            self.initial_state = state
+
+    # add helper method is_<state.name>
+    # for example is the state is sleeping
+    # add a method is_sleeping()
+    def __getattr__(self, item):
+        if item.startswith('is_'):
+            state_name = item[3:]
+            return self.current_state == state_name
+        elif item in self.events:
+            return lambda: self.attempt_transition(self.events[item])
+        else:
+            raise AttributeError(item)
+
+
+    def attempt_transition(self, event):
+        if self.current_state not in event.from_states:
+            raise InvalidStateTransition
+
+        self.update(event.to_state)
+
+
+    @property
+    def current_state(self):
+        return getattr(self.parent, self.underlying_name)
+
+    def __init__(self, **kwargs):
+        self.events = self.states = {}
+        self.initial_state = None
+
+
+        # parent refers to the object that this attribute is associted with so ...
+        #     class Fish():
+        #
+        # activity = StateMachine(
+        #     sleeping=State(initial=True),
+        #     swimming=State(),
+        #
+        #    swim=Event(from_states='sleeping', to_state='swimming'),
+        #    sleep=Event(from_states='swimming', to_state='sleeping')
+        # )
+        #
+        # parent will refer to the instance of Fish
+        self.parent = None
+
+        for key in kwargs:
+            value = kwargs[key]
+            setattr(value, 'name', key)
+            if isinstance(value, Event):
+                self.add_event(value)
+            elif isinstance(value, State):
+                self.add_state(value)
+            else:
+                raise TypeError("Expecting Events and States, nothing else")
+
+
+
+    # Descriptor Goodness
+    # https://docs.python.org/2/howto/descriptor.html
+    def __get__(self, instance, owner):
+        if instance is not None:
+            self.parent = instance
+        return self
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, value):
+        self._name = value
+        self.underlying_name = "sm_{}".format(value)
+
+
+    @property
+    def extra_class_members(self):
+        raise NotImplementedError
+
+    def update(self, new_state_name):
+        raise NotImplementedError
+
+    def __eq__(self, other):
+        if isinstance(other, basestring):
+            return self.current_state == other
+        elif isinstance(other, State):
+            return self.current_state == other.current_state
+
+
+class StateMachine(AbstractStateMachine):
+
+    @property
+    def extra_class_members(self):
+        return {self.underlying_name: self.initial_state}
+
+    def update(self, state_name):
+        setattr(self.parent, self.underlying_name, state_name)
+
+
+class MongoEngineStateMachine(AbstractStateMachine):
+
+    @property
+    def extra_class_members(self):
+        return {self.underlying_name: mongoengine.StringField(default=self.initial_state)}

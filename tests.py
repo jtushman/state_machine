@@ -22,7 +22,7 @@ try:
 except ImportError:
     sqlalchemy = None
 
-from state_machine import acts_as_state_machine, before, State, Event, after, InvalidStateTransition
+from state_machine import acts_as_state_machine, before, State, Event, after, InvalidStateTransition, StateMachine
 
 
 def requires_mongoengine(func):
@@ -109,6 +109,65 @@ def test_state_machine_no_callbacks():
     assert robot.is_running
     robot.sleep()
     assert robot.is_sleeping
+
+
+def test_multitple_machines_on_same_object():
+
+    @acts_as_state_machine
+    class Fish():
+
+        activity = StateMachine(
+            sleeping=State(initial=True),
+            swimming=State(),
+
+            swim=Event(from_states='sleeping', to_state='swimming'),
+            sleep=Event(from_states='swimming', to_state='sleeping')
+        )
+
+        preparation = StateMachine(
+            raw=State(inital=True),
+            cooking=State(),
+            cooked=State(),
+
+            cook=Event(from_states='raw', to_state='cooking'),
+            serve=Event(from_states='cooking', to_state='cooked'),
+        )
+
+        @before('activity.sleep')
+        def do_one_thing(self):
+            print("{} is sleepy".format(self.name))
+
+        @before('activity.sleep')
+        def do_another_thing(self):
+            print("{} is REALLY sleepy".format(self.name))
+
+        @after('activity.sleep')
+        def snore(self):
+            print("Zzzzzzzzzzzz")
+
+        @after('activity.sleep')
+        def snore(self):
+            print("Zzzzzzzzzzzzzzzzzzzzzz")
+
+    fish = Fish()
+    eq_(fish.activity, 'sleeping')
+    assert fish.activity.is_sleeping
+    assert not fish.activity.is_swimming
+    fish.activity.swim()
+    assert fish.activity.is_swimming
+    fish.activity.sleep()
+    assert fish.activity.is_sleeping
+
+    # Question if there is not naming conflicts should we support shortcuts:
+    # Such as:
+    #
+    # fish.is_swimming
+    # fish.swim()
+    #
+    # vs.
+    #
+    # fish.activity.is_swimming
+    # fish.activity.swim()
 
 
 def test_multiple_machines():
