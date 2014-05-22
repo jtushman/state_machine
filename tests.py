@@ -22,7 +22,7 @@ try:
 except ImportError:
     sqlalchemy = None
 
-from state_machine import acts_as_state_machine, before, State, Event, after, InvalidStateTransition, StateMachine
+from state_machine import acts_as_state_machine, State, Event, InvalidStateTransition, StateMachine, MongoEngineStateMachine
 
 
 def requires_mongoengine(func):
@@ -94,22 +94,24 @@ def test_state_machine_no_callbacks():
     class Robot():
         name = 'R2-D2'
 
-        sleeping = State(initial=True)
-        running = State()
-        cleaning = State()
+        status = StateMachine(
+            sleeping=State(initial=True),
+            running=State(),
+            cleaning=State(),
 
-        run = Event(from_states=sleeping, to_state=running)
-        cleanup = Event(from_states=running, to_state=cleaning)
-        sleep = Event(from_states=(running, cleaning), to_state=sleeping)
+            run=Event(from_states='sleeping', to_state='running'),
+            cleanup=Event(from_states='running', to_state='cleaning'),
+            sleep=Event(from_states=('running', 'cleaning'), to_state='sleeping')
+        )
 
     robot = Robot()
-    eq_(robot.current_state, 'sleeping')
-    assert robot.is_sleeping
-    assert not robot.is_running
-    robot.run()
-    assert robot.is_running
-    robot.sleep()
-    assert robot.is_sleeping
+    eq_(robot.status, 'sleeping')
+    assert robot.status.is_sleeping
+    assert not robot.status.is_running
+    robot.status.run()
+    assert robot.status.is_running
+    robot.status.sleep()
+    assert robot.status.is_sleeping
 
 
 def test_multitple_machines_on_same_object():
@@ -134,19 +136,19 @@ def test_multitple_machines_on_same_object():
             serve=Event(from_states='cooking', to_state='cooked'),
         )
 
-        @before('activity.sleep')
+        @activity.before('sleep')
         def do_one_thing(self):
             print("{} is sleepy".format(self.name))
 
-        @before('activity.sleep')
+        @activity.before('sleep')
         def do_another_thing(self):
             print("{} is REALLY sleepy".format(self.name))
 
-        @after('activity.sleep')
+        @activity.after('sleep')
         def snore(self):
             print("Zzzzzzzzzzzz")
 
-        @after('activity.sleep')
+        @activity.after('sleep')
         def snore(self):
             print("Zzzzzzzzzzzzzzzzzzzzzz")
 
@@ -171,43 +173,6 @@ def test_multitple_machines_on_same_object():
     # fish.activity.swim()
 
 
-def test_multiple_machines():
-    @acts_as_state_machine
-    class Person(object):
-        sleeping = State(initial=True)
-        running = State()
-        cleaning = State()
-
-        run = Event(from_states=sleeping, to_state=running)
-        cleanup = Event(from_states=running, to_state=cleaning)
-        sleep = Event(from_states=(running, cleaning), to_state=sleeping)
-
-        @before('run')
-        def on_run(self):
-            things_done.append("Person.ran")
-
-    @acts_as_state_machine
-    class Dog(object):
-        sleeping = State(initial=True)
-        running = State()
-
-        run = Event(from_states=sleeping, to_state=running)
-        sleep = Event(from_states=(running,), to_state=sleeping)
-
-        @before('run')
-        def on_run(self):
-            things_done.append("Dog.ran")
-
-    things_done = []
-    person = Person()
-    dog = Dog()
-    eq_(person.current_state, 'sleeping')
-    eq_(dog.current_state, 'sleeping')
-    assert person.is_sleeping
-    assert dog.is_sleeping
-    person.run()
-    eq_(things_done, ["Person.ran"])
-
 ###################################################################################
 ## SqlAlchemy Tests
 ###################################################################################
@@ -224,27 +189,29 @@ def test_sqlalchemy_state_machine():
         id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
         name = sqlalchemy.Column(sqlalchemy.String)
 
-        sleeping = State(initial=True)
-        running = State()
-        cleaning = State()
+        status = StateMachine(
+            sleeping=State(initial=True),
+            running=State(),
+            cleaning=State(),
 
-        run = Event(from_states=sleeping, to_state=running)
-        cleanup = Event(from_states=running, to_state=cleaning)
-        sleep = Event(from_states=(running, cleaning), to_state=sleeping)
+            run=Event(from_states='sleeping', to_state='running'),
+            cleanup=Event(from_states='running', to_state='cleaning'),
+            sleep=Event(from_states=('running', 'cleaning'), to_state='sleeping')
+        )
 
-        @before('sleep')
+        @status.before('sleep')
         def do_one_thing(self):
             print("{} is sleepy".format(self.name))
 
-        @before('sleep')
+        @status.before('sleep')
         def do_another_thing(self):
             print("{} is REALLY sleepy".format(self.name))
 
-        @after('sleep')
+        @status.after('sleep')
         def snore(self):
             print("Zzzzzzzzzzzz")
 
-        @after('sleep')
+        @status.after('sleep')
         def snore(self):
             print("Zzzzzzzzzzzzzzzzzzzzzz")
 
@@ -368,46 +335,49 @@ def test_mongoengine_state_machine():
     class Person(mongoengine.Document):
         name = mongoengine.StringField(default='Billy')
 
-        sleeping = State(initial=True)
-        running = State()
-        cleaning = State()
+        status = MongoEngineStateMachine(
+            sleeping=State(initial=True),
+            running=State(),
+            cleaning=State(),
 
-        run = Event(from_states=sleeping, to_state=running)
-        cleanup = Event(from_states=running, to_state=cleaning)
-        sleep = Event(from_states=(running, cleaning), to_state=sleeping)
+            run=Event(from_states='sleeping', to_state='running'),
+            cleanup=Event(from_states='running', to_state='cleaning'),
+            sleep=Event(from_states=('running', 'cleaning'), to_state='sleeping')
+        )
 
-        @before('sleep')
+        @status.before('sleep')
         def do_one_thing(self):
             print("{} is sleepy".format(self.name))
 
-        @before('sleep')
+        @status.before('sleep')
         def do_another_thing(self):
             print("{} is REALLY sleepy".format(self.name))
 
-        @after('sleep')
+        @status.after('sleep')
         def snore(self):
             print("Zzzzzzzzzzzz")
 
-        @after('sleep')
+        @status.after('sleep')
         def snore(self):
             print("Zzzzzzzzzzzzzzzzzzzzzz")
 
     establish_mongo_connection()
 
     person = Person()
+
     person.save()
-    eq_(person.current_state, Person.sleeping)
-    assert person.is_sleeping
-    assert not person.is_running
-    person.run()
-    assert person.is_running
-    person.sleep()
-    assert person.is_sleeping
-    person.run()
+    eq_(person.status, 'sleeping')
+    assert person.status.is_sleeping
+    assert not person.status.is_running
+    person.status.run()
+    assert person.status.is_running
+    person.status.sleep()
+    assert person.status.is_sleeping
+    person.status.run()
     person.save()
 
     person2 = Person.objects(id=person.id).first()
-    assert person2.is_running
+    assert person2.status.is_running
 
 
 @requires_mongoengine
@@ -416,22 +386,24 @@ def test_invalid_state_transition():
     class Person(mongoengine.Document):
         name = mongoengine.StringField(default='Billy')
 
-        sleeping = State(initial=True)
-        running = State()
-        cleaning = State()
+        status = MongoEngineStateMachine(
+            sleeping=State(initial=True),
+            running=State(),
+            cleaning=State(),
 
-        run = Event(from_states=sleeping, to_state=running)
-        cleanup = Event(from_states=running, to_state=cleaning)
-        sleep = Event(from_states=(running, cleaning), to_state=sleeping)
+            run=Event(from_states='sleeping', to_state='running'),
+            cleanup=Event(from_states='running', to_state='cleaning'),
+            sleep=Event(from_states=('running', 'cleaning'), to_state='sleeping')
+        )
 
     establish_mongo_connection()
     person = Person()
     person.save()
-    assert person.is_sleeping
+    assert person.status.is_sleeping
 
     #should raise an invalid state exception
     with assert_raises(InvalidStateTransition):
-        person.sleep()
+        person.status.sleep()
 
 
 @requires_mongoengine
@@ -440,26 +412,28 @@ def test_before_callback_blocking_transition():
     class Runner(mongoengine.Document):
         name = mongoengine.StringField(default='Billy')
 
-        sleeping = State(initial=True)
-        running = State()
-        cleaning = State()
+        status = MongoEngineStateMachine(
+            sleeping=State(initial=True),
+            running=State(),
+            cleaning=State(),
 
-        run = Event(from_states=sleeping, to_state=running)
-        cleanup = Event(from_states=running, to_state=cleaning)
-        sleep = Event(from_states=(running, cleaning), to_state=sleeping)
+            run=Event(from_states='sleeping', to_state='running'),
+            cleanup=Event(from_states='running', to_state='cleaning'),
+            sleep=Event(from_states=('running', 'cleaning'), to_state='sleeping')
+        )
 
-        @before('run')
+        @status.before('run')
         def check_sneakers(self):
             return False
 
     establish_mongo_connection()
     runner = Runner()
     runner.save()
-    assert runner.is_sleeping
-    runner.run()
+    assert runner.status.is_sleeping
+    runner.status.run()
     runner.reload()
-    assert runner.is_sleeping
-    assert not runner.is_running
+    assert runner.status.is_sleeping
+    assert not runner.status.is_running
 
 
 if __name__ == "__main__":

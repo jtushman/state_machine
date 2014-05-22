@@ -8,6 +8,16 @@ try:
 except ImportError as e:
     mongoengine = None
 
+try:
+    import sqlalchemy
+    from sqlalchemy import inspection
+    from sqlalchemy.orm import instrumentation
+    from sqlalchemy.orm import Session
+except ImportError:
+    sqlalchemy = None
+    instrumentation = None
+
+
 class InvalidStateTransition(Exception):
     pass
 
@@ -118,6 +128,7 @@ class AbstractStateMachine(object):
 
         self.before_callbacks = {}
         self.after_callbacks = {}
+        self.underlying_name = None
 
 
         # parent refers to the object that this attribute is associted with so ...
@@ -203,4 +214,16 @@ class MongoEngineStateMachine(AbstractStateMachine):
 
     @property
     def extra_class_members(self):
-        return {self.underlying_name: mongoengine.StringField(default=self.initial_state)}
+        return {self.underlying_name: mongoengine.StringField(default=self.initial_state.name)}
+
+    def update(self, state_name):
+        setattr(self.parent, self.underlying_name, state_name)
+
+
+class SqlAlchemyStateMachine(AbstractStateMachine):
+
+    def extra_class_members(self):
+        return {self.underlying_name: sqlalchemy.Column(sqlalchemy.String)}
+
+    def update(self, state_name):
+        setattr(self.parent, self.underlying_name, state_name)
