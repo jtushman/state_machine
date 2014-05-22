@@ -18,7 +18,37 @@ except ImportError:
     instrumentation = None
 
 
-def modified_class_for_mongoengine(original_class):
+def acts_as_state_machine(original_class):
+    """ Decorates classes that contain StateMachines to update the classes constructors and underlying
+        structure if needed.
+
+        For example for mongoengine it will add the necessary fields needed,
+        and for sqlalchemy it updates the constructure to set the default states
+    """
+
+    if mongoengine and issubclass(original_class, mongoengine.Document):
+        return _modified_class_for_mongoengine(original_class)
+    elif sqlalchemy is not None and hasattr(original_class, '_sa_class_manager') and isinstance(
+            original_class._sa_class_manager, instrumentation.ClassManager):
+        return _modified_class_for_sqlalchemy(original_class)
+    else:
+        return modified_class(original_class)
+
+
+def modified_class(original_class):
+    for member, value in inspect.getmembers(original_class):
+
+        if isinstance(value, AbstractStateMachine):
+            name, machine = member, value
+            setattr(machine, 'name', name)
+
+            # add extra_class memebers is necessary as such the case for mongo and sqlalchemy
+            for name in machine.extra_class_members:
+                setattr(original_class, name, machine.extra_class_members[name])
+    return original_class
+
+
+def _modified_class_for_mongoengine(original_class):
     class_name = original_class.__name__
     class_dict = dict()
     class_dict.update(original_class.__dict__)
@@ -39,7 +69,7 @@ def modified_class_for_mongoengine(original_class):
     return clazz
 
 
-def modified_class_for_sqlalchemy(original_class):
+def _modified_class_for_sqlalchemy(original_class):
     mod_class = modified_class(original_class)
 
     orig_init = mod_class.__init__
@@ -61,25 +91,7 @@ def modified_class_for_sqlalchemy(original_class):
 
 
 
-def modified_class(original_class):
-    for member, value in inspect.getmembers(original_class):
-
-        if isinstance(value, AbstractStateMachine):
-            name, machine = member, value
-            setattr(machine, 'name', name)
-
-            # add extra_class memebers is necessary as such the case for mongo and sqlalchemy
-            for name in machine.extra_class_members:
-                setattr(original_class, name, machine.extra_class_members[name])
-    return original_class
 
 
-def acts_as_state_machine(original_class):
 
-    if mongoengine and issubclass(original_class, mongoengine.Document):
-        return modified_class_for_mongoengine(original_class)
-    elif sqlalchemy is not None and hasattr(original_class, '_sa_class_manager') and isinstance(
-            original_class._sa_class_manager, instrumentation.ClassManager):
-        return modified_class_for_sqlalchemy(original_class)
-    else:
-        return modified_class(original_class)
+

@@ -18,8 +18,9 @@ except ImportError:
     instrumentation = None
 
 
-
 class InvalidStateTransition(Exception):
+    """ A statemachine attempted to enter a state that it is not allowed to enter
+    """
     pass
 
 
@@ -35,16 +36,17 @@ class State(object):
         else:
             return False
 
-
     def __ne__(self, other):
         return not self == other
 
 
 class Event(object):
+
     def __init__(self, **kwargs):
         self.name = None
         self.to_state = kwargs['to_state']
         self.from_states = tuple()
+
         from_state_args = kwargs.get('from_states', tuple())
         if isinstance(from_state_args, (tuple, list)):
             self.from_states = tuple(from_state_args)
@@ -65,7 +67,28 @@ class Event(object):
 
 
 class AbstractStateMachine(object):
-    """ Collection of states and events
+    """ Our StateMachine (well abstract state machine)
+
+        It uses python descriptors to get the context of the parent class.  It should be used in conjunction with
+        `acts_as_state_machine`
+
+        @acts_as_state_machine
+        class Robot():
+            name = 'R2-D2'
+
+            status = StateMachine(
+                sleeping=State(initial=True),
+                running=State(),
+                cleaning=State(),
+                run=Event(from_states='sleeping', to_state='running'),
+                cleanup=Event(from_states='running', to_state='cleaning'),
+                sleep=Event(from_states=('running', 'cleaning'), to_state='sleeping')
+            )
+
+        You should use one of the implemented StateMachines:
+        * StateMachine
+        * MongoEngineStateMachine
+        * SqlAlchemyStateMachine
     """
 
     def add_event(self, value):
@@ -80,13 +103,16 @@ class AbstractStateMachine(object):
                 raise ValueError("multiple initial states!")
             self.initial_state = state
 
-    # add helper method is_<state.name>
-    # for example is the state is sleeping
-    # add a method is_sleeping()
+
     def __getattr__(self, item):
+        # add helper method is_<state.name>
+        # for example is the state is sleeping
+        # add a method is_sleeping()
         if item.startswith('is_'):
             state_name = item[3:]
             return self.current_state == state_name
+
+        # if it is an event, then attempt the transition
         elif item in self.events:
             return lambda: self.attempt_transition(self.events[item])
         else:
@@ -94,6 +120,15 @@ class AbstractStateMachine(object):
 
 
     def attempt_transition(self, event):
+        """ attempts the transition
+
+            if there any before callbacks will execute them first
+
+            if any of them fail or return false it will cancel the transition
+
+            upon successful transition it will then call the after callbacks
+        """
+
         if self.current_state not in event.from_states:
             raise InvalidStateTransition
 
@@ -161,6 +196,9 @@ class AbstractStateMachine(object):
     # Descriptor Goodness
     # https://docs.python.org/2/howto/descriptor.html
     def __get__(self, instance, owner):
+        """ Descriptor Goodness
+            used to set the parent on to the instance
+        """
         if instance is not None:
             self.parent = instance
         return self
@@ -175,13 +213,6 @@ class AbstractStateMachine(object):
         self.underlying_name = "sm_{}".format(value)
 
 
-    @property
-    def extra_class_members(self):
-        raise NotImplementedError
-
-    def update(self, new_state_name):
-        raise NotImplementedError
-
     def before(self, before_what):
         def wrapper(func):
             self.before_callbacks.setdefault(before_what, []).append(func)
@@ -195,10 +226,22 @@ class AbstractStateMachine(object):
         return wrapper
 
     def __eq__(self, other):
-        if isinstance(other, basestring):
+        if isinstance(other, string_type):
             return self.current_state == other
         elif isinstance(other, State):
             return self.current_state == other.current_state
+
+
+    ###############################################################################################
+    # Abstract Method Contract
+    ###############################################################################################
+
+    @property
+    def extra_class_members(self):
+        raise NotImplementedError
+
+    def update(self, new_state_name):
+        raise NotImplementedError
 
 
 class StateMachine(AbstractStateMachine):
