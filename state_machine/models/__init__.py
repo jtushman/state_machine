@@ -31,6 +31,7 @@ class State(object):
 
 class Event(object):
     def __init__(self, **kwargs):
+        self.name = None
         self.to_state = kwargs['to_state']
         self.from_states = tuple()
         from_state_args = kwargs.get('from_states', tuple())
@@ -44,6 +45,12 @@ class Event(object):
 
         if self.from_states is None or len(self.from_states) == 0:
             raise TypeError("Expected From States to be set")
+
+    def __eq__(self, other):
+        if isinstance(other, basestring):
+            return self.name == other
+        elif isinstance(other, Event):
+            return self.name == other.name
 
 
 class AbstractStateMachine(object):
@@ -79,7 +86,26 @@ class AbstractStateMachine(object):
         if self.current_state not in event.from_states:
             raise InvalidStateTransition
 
-        self.update(event.to_state)
+        # fire before_change events
+        failed = False
+
+        # TODO: what do we need to overwrite so we can do:
+        # event in ??
+        if event.name in self.before_callbacks:
+            for callback in self.before_callbacks[event.name]:
+                result = callback(self)
+                if result is False:
+                    print("One of the 'before' callbacks returned false, breaking")
+                    failed = True
+                    break
+
+        if not failed:
+            self.update(event.to_state)
+
+            # fire after change events
+            if event.name in self.after_callbacks:
+                for callback in self.after_callbacks[event.name]:
+                    callback(self)
 
 
     @property
@@ -89,6 +115,9 @@ class AbstractStateMachine(object):
     def __init__(self, **kwargs):
         self.events = self.states = {}
         self.initial_state = None
+
+        self.before_callbacks = {}
+        self.after_callbacks = {}
 
 
         # parent refers to the object that this attribute is associted with so ...
@@ -140,6 +169,18 @@ class AbstractStateMachine(object):
 
     def update(self, new_state_name):
         raise NotImplementedError
+
+    def before(self, before_what):
+        def wrapper(func):
+            self.before_callbacks.setdefault(before_what, []).append(func)
+            return func
+        return wrapper
+
+    def after(self, after_what):
+        def wrapper(func):
+            self.after_callbacks.setdefault(after_what, []).append(func)
+            return func
+        return wrapper
 
     def __eq__(self, other):
         if isinstance(other, basestring):

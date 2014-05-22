@@ -53,39 +53,40 @@ def test_state_machine():
     class Robot():
         name = 'R2-D2'
 
-        sleeping = State(initial=True)
-        running = State()
-        cleaning = State()
+        status = StateMachine(
+            sleeping=State(initial=True),
+            running=State(),
+            cleaning=State(),
+            run=Event(from_states='sleeping', to_state='running'),
+            cleanup=Event(from_states='running', to_state='cleaning'),
+            sleep=Event(from_states=('running', 'cleaning'), to_state='sleeping')
+        )
 
-        run = Event(from_states=sleeping, to_state=running)
-        cleanup = Event(from_states=running, to_state=cleaning)
-        sleep = Event(from_states=(running, cleaning), to_state=sleeping)
-
-        @before('sleep')
+        @status.before('sleep')
         def do_one_thing(self):
             print("{} is sleepy".format(self.name))
 
-        @before('sleep')
+        @status.before('sleep')
         def do_another_thing(self):
             print("{} is REALLY sleepy".format(self.name))
 
-        @after('sleep')
+        @status.after('sleep')
         def snore(self):
             print("Zzzzzzzzzzzz")
 
-        @after('sleep')
+        @status.after('sleep')
         def snore(self):
             print("Zzzzzzzzzzzzzzzzzzzzzz")
 
 
     robot = Robot()
-    eq_(robot.current_state, 'sleeping')
-    assert robot.is_sleeping
-    assert not robot.is_running
-    robot.run()
-    assert robot.is_running
-    robot.sleep()
-    assert robot.is_sleeping
+    eq_(robot.status, 'sleeping')
+    assert robot.status.is_sleeping
+    assert not robot.status.is_running
+    robot.status.run()
+    assert robot.status.is_running
+    robot.status.sleep()
+    assert robot.status.is_sleeping
 
 
 def test_state_machine_no_callbacks():
