@@ -18,6 +18,7 @@ except ImportError:
     instrumentation = None
 
 
+
 class InvalidStateTransition(Exception):
     pass
 
@@ -222,6 +223,7 @@ class MongoEngineStateMachine(AbstractStateMachine):
 
 class SqlAlchemyStateMachine(AbstractStateMachine):
 
+    @property
     def extra_class_members(self):
         return {self.underlying_name: sqlalchemy.Column(sqlalchemy.String)}
 

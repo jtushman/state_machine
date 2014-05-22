@@ -17,12 +17,13 @@ def establish_mongo_connection():
 
 try:
     import sqlalchemy
-
-    engine = sqlalchemy.create_engine('sqlite:///:memory:', echo=True)
+    engine = sqlalchemy.create_engine('sqlite:///:memory:', echo=False)
 except ImportError:
     sqlalchemy = None
 
-from state_machine import acts_as_state_machine, State, Event, InvalidStateTransition, StateMachine, MongoEngineStateMachine
+
+
+from state_machine import acts_as_state_machine, State, Event, InvalidStateTransition, StateMachine, MongoEngineStateMachine, SqlAlchemyStateMachine
 
 
 def requires_mongoengine(func):
@@ -189,7 +190,7 @@ def test_sqlalchemy_state_machine():
         id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
         name = sqlalchemy.Column(sqlalchemy.String)
 
-        status = StateMachine(
+        status = SqlAlchemyStateMachine(
             sleeping=State(initial=True),
             running=State(),
             cleaning=State(),
@@ -223,18 +224,18 @@ def test_sqlalchemy_state_machine():
 
     puppy = Puppy(name='Ralph')
 
-    eq_(puppy.current_state, Puppy.sleeping)
-    assert puppy.is_sleeping
-    assert not puppy.is_running
-    puppy.run()
-    assert puppy.is_running
+    eq_(puppy.status, 'sleeping')
+    assert puppy.status.is_sleeping
+    assert not puppy.status.is_running
+    puppy.status.run()
+    assert puppy.status.is_running
 
     session.add(puppy)
     session.commit()
 
     puppy2 = session.query(Puppy).filter_by(id=puppy.id)[0]
 
-    assert puppy2.is_running
+    assert puppy2.status.is_running
 
 
 @requires_sqlalchemy
@@ -252,14 +253,31 @@ def test_sqlalchemy_state_machine_no_callbacks():
         id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
         name = sqlalchemy.Column(sqlalchemy.String)
 
-        sleeping = State(initial=True)
-        running = State()
-        cleaning = State()
+        status = SqlAlchemyStateMachine(
+            sleeping=State(initial=True),
+            running=State(),
+            cleaning=State(),
 
-        run = Event(from_states=sleeping, to_state=running)
-        cleanup = Event(from_states=running, to_state=cleaning)
-        sleep = Event(from_states=(running, cleaning), to_state=sleeping)
+            run=Event(from_states='sleeping', to_state='running'),
+            cleanup=Event(from_states='running', to_state='cleaning'),
+            sleep=Event(from_states=('running', 'cleaning'), to_state='sleeping')
+        )
 
+        @status.before('sleep')
+        def do_one_thing(self):
+            print("{} is sleepy".format(self.name))
+
+        @status.before('sleep')
+        def do_another_thing(self):
+            print("{} is REALLY sleepy".format(self.name))
+
+        @status.after('sleep')
+        def snore(self):
+            print("Zzzzzzzzzzzz")
+
+        @status.after('sleep')
+        def snore(self):
+            print("Zzzzzzzzzzzzzzzzzzzzzz")
 
     Base.metadata.create_all(engine)
 
@@ -268,18 +286,18 @@ def test_sqlalchemy_state_machine_no_callbacks():
 
     kitten = Kitten(name='Kit-Kat')
 
-    eq_(kitten.current_state, Kitten.sleeping)
-    assert kitten.is_sleeping
-    assert not kitten.is_running
-    kitten.run()
-    assert kitten.is_running
+    eq_(kitten.status, 'sleeping')
+    assert kitten.status.is_sleeping
+    assert not kitten.status.is_running
+    kitten.status.run()
+    assert kitten.status.is_running
 
     session.add(kitten)
     session.commit()
 
     kitten2 = session.query(Kitten).filter_by(id=kitten.id)[0]
 
-    assert kitten2.is_running
+    assert kitten2.status.is_running
 
 
 @requires_sqlalchemy
@@ -297,13 +315,31 @@ def test_sqlalchemy_state_machine_using_initial_state():
         id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
         name = sqlalchemy.Column(sqlalchemy.String)
 
-        sleeping = State(initial=True)
-        running = State()
-        cleaning = State()
+        status = SqlAlchemyStateMachine(
+            sleeping=State(initial=True),
+            running=State(),
+            cleaning=State(),
 
-        run = Event(from_states=sleeping, to_state=running)
-        cleanup = Event(from_states=running, to_state=cleaning)
-        sleep = Event(from_states=(running, cleaning), to_state=sleeping)
+            run=Event(from_states='sleeping', to_state='running'),
+            cleanup=Event(from_states='running', to_state='cleaning'),
+            sleep=Event(from_states=('running', 'cleaning'), to_state='sleeping')
+        )
+
+        @status.before('sleep')
+        def do_one_thing(self):
+            print("{} is sleepy".format(self.name))
+
+        @status.before('sleep')
+        def do_another_thing(self):
+            print("{} is REALLY sleepy".format(self.name))
+
+        @status.after('sleep')
+        def snore(self):
+            print("Zzzzzzzzzzzz")
+
+        @status.after('sleep')
+        def snore(self):
+            print("Zzzzzzzzzzzzzzzzzzzzzz")
 
 
     Base.metadata.create_all(engine)
@@ -313,15 +349,15 @@ def test_sqlalchemy_state_machine_using_initial_state():
 
     # Note: No state transition occurs between the initial state and when it's saved to the database.
     penguin = Penguin(name='Tux')
-    eq_(penguin.current_state, Penguin.sleeping)
-    assert penguin.is_sleeping
+    eq_(penguin.status, 'sleeping')
+    assert penguin.status.is_sleeping
 
     session.add(penguin)
     session.commit()
 
     penguin2 = session.query(Penguin).filter_by(id=penguin.id)[0]
 
-    assert penguin2.is_sleeping
+    assert penguin2.status.is_sleeping
 
 
 ###################################################################################

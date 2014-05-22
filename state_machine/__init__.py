@@ -8,80 +8,20 @@ try:
 except ImportError as e:
     mongoengine = None
 
-# _temp_callback_cache = None
-#
-# def get_callback_cache():
-#     global _temp_callback_cache
-#     if _temp_callback_cache is None:
-#         _temp_callback_cache = dict()
-#     return _temp_callback_cache
-#
-# def get_function_name(frame):
-#     return inspect.getouterframes(frame)[1][3]
-#
-# def before(before_what):
-#     def wrapper(func):
-#         frame = inspect.currentframe()
-#         calling_class = get_function_name(frame)
-#
-#         calling_class_dict = get_callback_cache().setdefault(calling_class, {'before': {}, 'after': {}})
-#         calling_class_dict['before'].setdefault(before_what, []).append(func)
-#
-#         return func
-#
-#     return wrapper
-#
-#
-# def after(after_what):
-#     def wrapper(func):
-#
-#         frame = inspect.currentframe()
-#         calling_class = get_function_name(frame)
-#
-#         calling_class_dict = get_callback_cache().setdefault(calling_class, {'before': {}, 'after': {}})
-#         calling_class_dict['after'].setdefault(after_what, []).append(func)
-#
-#         return func
-#
-#     return wrapper
+try:
+    import sqlalchemy
+    from sqlalchemy import inspection
+    from sqlalchemy.orm import instrumentation
+    from sqlalchemy.orm import Session
+except ImportError:
+    sqlalchemy = None
+    instrumentation = None
 
 
-
-# def _get_potential_state_machine_attributes(clazz):
-#     if mongoengine is not None:
-#         # reimplementing inspect.getmembers to swallow ConnectionError
-#         results = []
-#         for key in dir(clazz):
-#             try:
-#                 value = getattr(clazz, key)
-#             except (AttributeError, mongoengine.ConnectionError):
-#                 continue
-#             results.append((key, value))
-#         results.sort()
-#         return results
-#     else:
-#         return inspect.getmembers(clazz)
-
-# def acts_as_state_machine(original_class):
-#
-#     for member, value in _get_potential_state_machine_attributes(original_class):
-#
-#         if isinstance(value, AbstractStateMachine):
-#             name, machine = member, value
-#             setattr(machine, 'name', name)
-#
-#             # add extra_class memebers is necessary as such the case for mongo and sqlalchemy
-#             for name in machine.extra_class_members:
-#                 setattr(original_class, name, machine.extra_class_members[name])
-#
-#     return original_class
-
-def acts_as_state_machine(original_class):
-
+def modified_class_for_mongoengine(original_class):
     class_name = original_class.__name__
     class_dict = dict()
     class_dict.update(original_class.__dict__)
-
     extra_members = {}
     for member in class_dict:
         value = class_dict[member]
@@ -95,7 +35,51 @@ def acts_as_state_machine(original_class):
                 extra_members[name] = machine.extra_class_members[name]
 
     class_dict.update(extra_members)
-
     clazz = type(class_name, original_class.__bases__, class_dict)
     return clazz
 
+
+def modified_class_for_sqlalchemy(original_class):
+    mod_class = modified_class(original_class)
+
+    orig_init = mod_class.__init__
+
+    def new_init_builder():
+        def new_init(self, *args, **kwargs):
+            orig_init(self, *args, **kwargs)
+
+            for member, value in inspect.getmembers(mod_class):
+
+                if isinstance(value, AbstractStateMachine):
+                    machine = value
+                    setattr(self, machine.underlying_name, machine.initial_state.name)
+
+        return new_init
+
+    mod_class.__init__ = new_init_builder()
+    return mod_class
+
+
+
+def modified_class(original_class):
+    for member, value in inspect.getmembers(original_class):
+
+        if isinstance(value, AbstractStateMachine):
+            name, machine = member, value
+            setattr(machine, 'name', name)
+
+            # add extra_class memebers is necessary as such the case for mongo and sqlalchemy
+            for name in machine.extra_class_members:
+                setattr(original_class, name, machine.extra_class_members[name])
+    return original_class
+
+
+def acts_as_state_machine(original_class):
+
+    if mongoengine and issubclass(original_class, mongoengine.Document):
+        return modified_class_for_mongoengine(original_class)
+    elif sqlalchemy is not None and hasattr(original_class, '_sa_class_manager') and isinstance(
+            original_class._sa_class_manager, instrumentation.ClassManager):
+        return modified_class_for_sqlalchemy(original_class)
+    else:
+        return modified_class(original_class)
