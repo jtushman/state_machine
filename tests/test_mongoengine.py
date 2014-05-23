@@ -9,7 +9,7 @@ try:
 except ImportError:
     mongoengine = None
 
-from state_machine import acts_as_state_machine, State, Event, MongoEngineStateMachine
+from state_machine import acts_as_state_machine, State, Event, MongoEngineStateMachine as StateMachine
 from state_machine import InvalidStateTransition, StateTransitionFailure
 
 def establish_mongo_connection():
@@ -28,6 +28,19 @@ def requires_mongoengine(func):
     return wrapper
 
 
+def sleep_run_machine():
+    """ This was repeated a lot in the tests so I pulled it out --keep it DRY
+    """
+    return StateMachine(
+        sleeping=State(initial=True),
+        running=State(),
+        cleaning=State(),
+        run=Event(from_states='sleeping', to_state='running'),
+        cleanup=Event(from_states='running', to_state='cleaning'),
+        sleep=Event(from_states=('running', 'cleaning'), to_state='sleeping')
+    )
+
+
 @requires_mongoengine
 def test_mongoengine_state_machine():
 
@@ -35,15 +48,7 @@ def test_mongoengine_state_machine():
     class Person(mongoengine.Document):
         name = mongoengine.StringField(default='Billy')
 
-        status = MongoEngineStateMachine(
-            sleeping=State(initial=True),
-            running=State(),
-            cleaning=State(),
-
-            run=Event(from_states='sleeping', to_state='running'),
-            cleanup=Event(from_states='running', to_state='cleaning'),
-            sleep=Event(from_states=('running', 'cleaning'), to_state='sleeping')
-        )
+        status = sleep_run_machine()
 
         @status.before('sleep')
         def do_one_thing(self):
@@ -86,15 +91,7 @@ def test_invalid_state_transition():
     class Person(mongoengine.Document):
         name = mongoengine.StringField(default='Billy')
 
-        status = MongoEngineStateMachine(
-            sleeping=State(initial=True),
-            running=State(),
-            cleaning=State(),
-
-            run=Event(from_states='sleeping', to_state='running'),
-            cleanup=Event(from_states='running', to_state='cleaning'),
-            sleep=Event(from_states=('running', 'cleaning'), to_state='sleeping')
-        )
+        status = sleep_run_machine()
 
     establish_mongo_connection()
     person = Person()
@@ -112,15 +109,7 @@ def test_before_callback_blocking_transition():
     class Runner(mongoengine.Document):
         name = mongoengine.StringField(default='Billy')
 
-        status = MongoEngineStateMachine(
-            sleeping=State(initial=True),
-            running=State(),
-            cleaning=State(),
-
-            run=Event(from_states='sleeping', to_state='running'),
-            cleanup=Event(from_states='running', to_state='cleaning'),
-            sleep=Event(from_states=('running', 'cleaning'), to_state='sleeping')
-        )
+        status = sleep_run_machine()
 
         @status.before('run')
         def check_sneakers(self):

@@ -5,19 +5,24 @@ from nose.tools import assert_raises
 from state_machine import acts_as_state_machine, State, Event, StateMachine
 from state_machine import InvalidStateTransition, StateTransitionFailure
 
+def sleep_run_machine():
+    """ This was repeated a lot in the tests so I pulled it out --keep it DRY
+    """
+    return StateMachine(
+        sleeping=State(initial=True),
+        running=State(),
+        cleaning=State(),
+        run=Event(from_states='sleeping', to_state='running'),
+        cleanup=Event(from_states='running', to_state='cleaning'),
+        sleep=Event(from_states=('running', 'cleaning'), to_state='sleeping')
+    )
+
 def test_state_machine():
     @acts_as_state_machine
     class Robot():
         name = 'R2-D2'
 
-        status = StateMachine(
-            sleeping=State(initial=True),
-            running=State(),
-            cleaning=State(),
-            run=Event(from_states='sleeping', to_state='running'),
-            cleanup=Event(from_states='running', to_state='cleaning'),
-            sleep=Event(from_states=('running', 'cleaning'), to_state='sleeping')
-        )
+        status = sleep_run_machine()
 
         @status.before('sleep')
         def do_one_thing(self):
@@ -51,15 +56,7 @@ def test_state_machine_no_callbacks():
     class Robot():
         name = 'R2-D2'
 
-        status = StateMachine(
-            sleeping=State(initial=True),
-            running=State(),
-            cleaning=State(),
-
-            run=Event(from_states='sleeping', to_state='running'),
-            cleanup=Event(from_states='running', to_state='cleaning'),
-            sleep=Event(from_states=('running', 'cleaning'), to_state='sleeping')
-        )
+        status = sleep_run_machine()
 
     robot = Robot()
     eq_(robot.status, 'sleeping')
@@ -91,7 +88,7 @@ def test_multitple_machines_on_same_object():
 
             cook=Event(from_states='raw', to_state='cooking'),
             serve=Event(from_states='cooking', to_state='cooked'),
-            )
+        )
 
         @activity.before('sleep')
         def do_one_thing(self):
@@ -118,16 +115,6 @@ def test_multitple_machines_on_same_object():
     fish.activity.sleep()
     assert fish.activity.is_sleeping
 
-    # Question if there is not naming conflicts should we support shortcuts:
-    # Such as:
-    #
-    # fish.is_swimming
-    # fish.swim()
-    #
-    # vs.
-    #
-    # fish.activity.is_swimming
-    # fish.activity.swim()
 
 
 def test_state_machine_event_wrappers():
@@ -135,15 +122,7 @@ def test_state_machine_event_wrappers():
     class Robot():
         name = 'R2-D2'
 
-        status = StateMachine(
-            sleeping=State(initial=True),
-            running=State(),
-            cleaning=State(),
-            run=Event(from_states='sleeping', to_state='running'),
-            cleanup=Event(from_states='running', to_state='cleaning'),
-            sleep=Event(from_states=('running', 'cleaning'), to_state='sleeping')
-        )
-
+        status = sleep_run_machine()
 
         # This if sucessful will move from running or cleaning to sleeping
         # will raise invalid state if not a valid transition
@@ -172,15 +151,7 @@ def test_state_machine_event_wrappers_block():
     class Robot():
         name = 'R2-D2'
 
-        status = StateMachine(
-            sleeping=State(initial=True),
-            running=State(),
-            cleaning=State(),
-            run=Event(from_states='sleeping', to_state='running'),
-            cleanup=Event(from_states='running', to_state='cleaning'),
-            sleep=Event(from_states=('running', 'cleaning'), to_state='sleeping')
-        )
-
+        status = sleep_run_machine()
 
         # This if sucessful will move from running or cleaning to sleeping
         # will raise invalid state if not a valid transition
