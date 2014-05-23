@@ -1,7 +1,7 @@
 import inspect
 
-from state_machine.models import Event, State, StateMachine, InvalidStateTransition, MongoEngineStateMachine, SqlAlchemyStateMachine, AbstractStateMachine
-# from state_machine.orm import get_adaptor
+from state_machine.models import Event, State, StateMachine, InvalidStateTransition, MongoEngineStateMachine, \
+    SqlAlchemyStateMachine, AbstractStateMachine, StateTransitionFailure
 
 try:
     import mongoengine

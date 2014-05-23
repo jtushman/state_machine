@@ -24,6 +24,12 @@ class InvalidStateTransition(Exception):
     pass
 
 
+class StateTransitionFailure(Exception):
+    """ The method that was triggering the transition failed (for instance with the `on` callbacks)
+    """
+
+
+
 class State(object):
     def __init__(self, initial=False, **kwargs):
         self.initial = initial
@@ -64,6 +70,9 @@ class Event(object):
             return self.name == other
         elif isinstance(other, Event):
             return self.name == other.name
+
+    def __hash__(self):
+        return self.name.__hash__()
 
 
 class AbstractStateMachine(object):
@@ -119,7 +128,7 @@ class AbstractStateMachine(object):
             raise AttributeError(item)
 
 
-    def attempt_transition(self, event):
+    def attempt_transition(self, event, on_function=None):
         """ attempts the transition
 
             if there any before callbacks will execute them first
@@ -136,22 +145,30 @@ class AbstractStateMachine(object):
         failed = False
 
         # TODO: what do we need to overwrite so we can do:
-        # event in ??
-        if event.name in self.before_callbacks:
+        if event in self.before_callbacks:
             for callback in self.before_callbacks[event.name]:
                 result = callback(self)
                 if result is False:
+                    #TODO: Should be a log
                     print("One of the 'before' callbacks returned false, breaking")
                     failed = True
                     break
 
-        if not failed:
-            self.update(event.to_state)
+        if failed:
+            return
 
-            # fire after change events
-            if event.name in self.after_callbacks:
-                for callback in self.after_callbacks[event.name]:
-                    callback(self)
+        if on_function:
+            function, args, kwargs = on_function
+            on_function_result = function(*args, **kwargs)
+            if on_function_result is False:
+                raise StateTransitionFailure("\"{}\" transition failed in 'on' callback".format(event.name))
+
+        self.update(event.to_state)
+
+        # fire after change events
+        if event.name in self.after_callbacks:
+            for callback in self.after_callbacks[event.name]:
+                callback(self)
 
 
     @property
@@ -212,7 +229,6 @@ class AbstractStateMachine(object):
         self._name = value
         self.underlying_name = "sm_{}".format(value)
 
-
     def before(self, before_what):
         def wrapper(func):
             self.before_callbacks.setdefault(before_what, []).append(func)
@@ -224,6 +240,13 @@ class AbstractStateMachine(object):
             self.after_callbacks.setdefault(after_what, []).append(func)
             return func
         return wrapper
+
+    def on(self, on_what):
+        def decorate(func):
+            def call(*args, **kwargs):
+                return self.attempt_transition(self.events[on_what], (func, args, kwargs))
+            return call
+        return decorate
 
     def __eq__(self, other):
         if isinstance(other, string_type):

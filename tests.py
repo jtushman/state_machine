@@ -21,9 +21,8 @@ try:
 except ImportError:
     sqlalchemy = None
 
-
-
-from state_machine import acts_as_state_machine, State, Event, InvalidStateTransition, StateMachine, MongoEngineStateMachine, SqlAlchemyStateMachine
+from state_machine import acts_as_state_machine, State, Event, InvalidStateTransition, \
+    StateMachine, MongoEngineStateMachine, SqlAlchemyStateMachine, StateTransitionFailure
 
 
 def requires_mongoengine(func):
@@ -172,6 +171,83 @@ def test_multitple_machines_on_same_object():
     #
     # fish.activity.is_swimming
     # fish.activity.swim()
+
+
+def test_state_machine_event_wrappers():
+    @acts_as_state_machine
+    class Robot():
+        name = 'R2-D2'
+
+        status = StateMachine(
+            sleeping=State(initial=True),
+            running=State(),
+            cleaning=State(),
+            run=Event(from_states='sleeping', to_state='running'),
+            cleanup=Event(from_states='running', to_state='cleaning'),
+            sleep=Event(from_states=('running', 'cleaning'), to_state='sleeping')
+        )
+
+
+        # This if sucessful will move from running or cleaning to sleeping
+        # will raise invalid state if not a valid transition
+        @status.on('run')
+        def run(self):
+            print("I'm running")
+
+        @status.on('sleep')
+        def sleep(self):
+            print("I'm going back to sleep")
+
+
+    robot = Robot()
+    eq_(robot.status, 'sleeping')
+    assert robot.status.is_sleeping
+    assert not robot.status.is_running
+    robot.run()
+    assert robot.status.is_running
+    robot.sleep()
+    assert robot.status.is_sleeping
+
+
+
+def test_state_machine_event_wrappers_block():
+    @acts_as_state_machine
+    class Robot():
+        name = 'R2-D2'
+
+        status = StateMachine(
+            sleeping=State(initial=True),
+            running=State(),
+            cleaning=State(),
+            run=Event(from_states='sleeping', to_state='running'),
+            cleanup=Event(from_states='running', to_state='cleaning'),
+            sleep=Event(from_states=('running', 'cleaning'), to_state='sleeping')
+        )
+
+
+        # This if sucessful will move from running or cleaning to sleeping
+        # will raise invalid state if not a valid transition
+        @status.on('run')
+        def try_running(self):
+            print "I'm running"
+            return False
+
+        @status.on('sleep')
+        def sleep(self):
+            print "I'm going back to sleep"
+
+
+    robot = Robot()
+    eq_(robot.status, 'sleeping')
+    assert robot.status.is_sleeping
+    assert not robot.status.is_running
+
+    #should raise an invalid state exception
+    with assert_raises(StateTransitionFailure):
+        robot.try_running()
+
+    assert robot.status.is_sleeping
+
 
 
 ###################################################################################
