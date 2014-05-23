@@ -1,9 +1,9 @@
-
 from nose.tools import *
 from nose.tools import assert_raises
 
 from state_machine import acts_as_state_machine, State, Event, StateMachine
-from state_machine import InvalidStateTransition, StateTransitionFailure
+from state_machine import StateTransitionFailure
+
 
 def sleep_run_machine():
     """ This was repeated a lot in the tests so I pulled it out --keep it DRY
@@ -16,6 +16,7 @@ def sleep_run_machine():
         cleanup=Event(from_states='running', to_state='cleaning'),
         sleep=Event(from_states=('running', 'cleaning'), to_state='sleeping')
     )
+
 
 def test_state_machine():
     @acts_as_state_machine
@@ -39,7 +40,6 @@ def test_state_machine():
         @status.after('sleep')
         def snore(self):
             print("Zzzzzzzzzzzzzzzzzzzzzz")
-
 
     robot = Robot()
     eq_(robot.status, 'sleeping')
@@ -116,7 +116,6 @@ def test_multitple_machines_on_same_object():
     assert fish.activity.is_sleeping
 
 
-
 def test_state_machine_event_wrappers():
     @acts_as_state_machine
     class Robot():
@@ -134,7 +133,6 @@ def test_state_machine_event_wrappers():
         def sleep(self):
             print("I'm going back to sleep")
 
-
     robot = Robot()
     eq_(robot.status, 'sleeping')
     assert robot.status.is_sleeping
@@ -143,7 +141,6 @@ def test_state_machine_event_wrappers():
     assert robot.status.is_running
     robot.sleep()
     assert robot.status.is_sleeping
-
 
 
 def test_state_machine_event_wrappers_block():
@@ -164,7 +161,6 @@ def test_state_machine_event_wrappers_block():
         def sleep(self):
             print "I'm going back to sleep"
 
-
     robot = Robot()
     eq_(robot.status, 'sleeping')
     assert robot.status.is_sleeping
@@ -175,3 +171,27 @@ def test_state_machine_event_wrappers_block():
         robot.try_running()
 
     assert robot.status.is_sleeping
+
+
+def test_empty_from_states():
+
+    @acts_as_state_machine
+    class Fax():
+
+        status = StateMachine(
+            ready=State(initial=True),
+            sending=State(),
+            failure=State(),
+
+            send=Event(from_states='ready', to_state='sending'),
+            fail=Event(to_state='failure'),
+        )
+
+
+    my_fax_machine = Fax()
+
+    eq_(my_fax_machine.status, 'ready')
+    my_fax_machine.status.fail()
+    eq_(my_fax_machine.status, 'failure')
+
+

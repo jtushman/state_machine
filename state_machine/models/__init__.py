@@ -51,22 +51,24 @@ class Event(object):
     def __init__(self, **kwargs):
         self.name = None
         self.to_state = kwargs['to_state']
-        self.from_states = tuple()
 
-        from_state_args = kwargs.get('from_states', tuple())
-        if isinstance(from_state_args, (tuple, list)):
-            self.from_states = tuple(from_state_args)
-        else:
-            self.from_states = (from_state_args,)
+        # If from states are empty that mean all states
+        self.from_states = None
+
+        from_state_args = kwargs.get('from_states', None)
+        if from_state_args:
+            if isinstance(from_state_args, (tuple, list)):
+                self.from_states = tuple(from_state_args)
+            else:
+                self.from_states = (from_state_args,)
 
         if self.to_state is None:
             raise TypeError("Expected to_state to be set")
 
-        if self.from_states is None or len(self.from_states) == 0:
-            raise TypeError("Expected From States to be set")
+
 
     def __eq__(self, other):
-        if isinstance(other, basestring):
+        if isinstance(other, string_type):
             return self.name == other
         elif isinstance(other, Event):
             return self.name == other.name
@@ -137,8 +139,7 @@ class AbstractStateMachine(object):
 
             upon successful transition it will then call the after callbacks
         """
-
-        if self.current_state not in event.from_states:
+        if event.from_states is not None and self.current_state not in event.from_states:
             raise InvalidStateTransition
 
         # fire before_change events
