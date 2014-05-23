@@ -45,6 +45,9 @@ class State(object):
     def __ne__(self, other):
         return not self == other
 
+    def __hash__(self):
+        return self.name.__hash__()
+
 
 class Event(object):
 
@@ -126,6 +129,8 @@ class AbstractStateMachine(object):
         # if it is an event, then attempt the transition
         elif item in self.events:
             return lambda: self.attempt_transition(self.events[item])
+        elif item in self.states:
+            return self.states[item]
         else:
             raise AttributeError(item)
 
@@ -177,7 +182,8 @@ class AbstractStateMachine(object):
         return getattr(self.parent, self.underlying_name)
 
     def __init__(self, **kwargs):
-        self.events = self.states = {}
+        self.events = {}
+        self.states = {}
         self.initial_state = None
 
         self.before_callbacks = {}
@@ -253,7 +259,7 @@ class AbstractStateMachine(object):
         if isinstance(other, string_type):
             return self.current_state == other
         elif isinstance(other, State):
-            return self.current_state == other.current_state
+            return self.current_state == other.name
 
 
     ###############################################################################################

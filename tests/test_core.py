@@ -154,12 +154,12 @@ def test_state_machine_event_wrappers_block():
         # will raise invalid state if not a valid transition
         @status.on('run')
         def try_running(self):
-            print "I'm running"
+            print("I'm running")
             return False
 
         @status.on('sleep')
         def sleep(self):
-            print "I'm going back to sleep"
+            print("I'm going back to sleep")
 
     robot = Robot()
     eq_(robot.status, 'sleeping')
@@ -187,11 +187,28 @@ def test_empty_from_states():
             fail=Event(to_state='failure'),
         )
 
-
     my_fax_machine = Fax()
 
     eq_(my_fax_machine.status, 'ready')
     my_fax_machine.status.fail()
     eq_(my_fax_machine.status, 'failure')
+
+
+def test_state_constants():
+
+    @acts_as_state_machine
+    class Robot():
+
+        status = StateMachine(
+            sleeping=State(initial=True),
+            running=State(),
+            cleaning=State(),
+            run=Event(from_states='sleeping', to_state='running'),
+            cleanup=Event(from_states='running', to_state='cleaning'),
+            sleep=Event(from_states=('running', 'cleaning'), to_state='sleeping')
+        )
+
+    robot = Robot()
+    eq_(robot.status, robot.status.sleeping)
 
 
