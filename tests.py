@@ -1,6 +1,7 @@
-import functools
 import os
 import nose
+import functools
+from pymongo import MongoClient
 from nose.plugins.skip import SkipTest
 from nose.tools import *
 from nose.tools import assert_raises
@@ -9,6 +10,7 @@ try:
     import mongoengine
 except ImportError:
     mongoengine = None
+
 
 def establish_mongo_connection():
     mongo_name = os.environ.get('AASM_MONGO_DB_NAME', 'test_acts_as_state_machine')
@@ -33,6 +35,13 @@ def requires_mongoengine(func):
         return func(*args, **kw)
 
     return wrapper
+
+
+def clear_mongo_databases():
+    mongo_name = os.environ.get('AASM_MONGO_DB_NAME', 'test_acts_as_state_machine')
+    mongo_port = int(os.environ.get('AASM_MONGO_DB_PORT', 27017))
+    client = MongoClient(port=mongo_port)
+    client.drop_database(mongo_name)
 
 
 def requires_sqlalchemy(func):
@@ -302,6 +311,7 @@ def test_sqlalchemy_state_machine_using_initial_state():
 ###################################################################################
 
 @requires_mongoengine
+@with_setup(clear_mongo_databases, clear_mongo_databases)
 def test_mongoengine_state_machine():
 
     @acts_as_state_machine
@@ -346,11 +356,11 @@ def test_mongoengine_state_machine():
     person.run()
     person.save()
 
-    person2 = Person.objects(id=person.id).first()
-    assert person2.is_running
+    assert person.is_running
 
 
 @requires_mongoengine
+@with_setup(clear_mongo_databases, clear_mongo_databases)
 def test_invalid_state_transition():
     @acts_as_state_machine
     class Person(mongoengine.Document):
@@ -375,6 +385,7 @@ def test_invalid_state_transition():
 
 
 @requires_mongoengine
+@with_setup(clear_mongo_databases, clear_mongo_databases)
 def test_before_callback_blocking_transition():
     @acts_as_state_machine
     class Runner(mongoengine.Document):
@@ -397,7 +408,6 @@ def test_before_callback_blocking_transition():
     runner.save()
     assert runner.is_sleeping
     runner.run()
-    runner.reload()
     assert runner.is_sleeping
     assert not runner.is_running
 

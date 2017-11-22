@@ -1,11 +1,8 @@
+sudo: false
 language: python
-python: 2.7
+python:
+  - "2.7"
+  - "3.6"
 services: mongodb
-env:
-  - TOX_ENV=py27-mongo
-  - TOX_ENV=py33-mongo
-  - TOX_ENV=pypy-mongo
-install:
-  - pip install tox
-script:
-  - tox -e $TOX_ENV
+install: pip install tox-travis
+script: tox

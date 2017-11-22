@@ -14,7 +14,7 @@ def get_packages():
 required_modules = []
 
 setup(name='state_machine',
-      version='0.2.9',
+      version='0.2.10',
       description='Python State Machines for Humans',
       url='http://github.com/jtushman/state_machine',
       author='Jonathan Tushman',
@@ -23,7 +23,7 @@ setup(name='state_machine',
       license='MIT',
       packages=get_packages(),
       zip_safe=False,
-      tests_require=['nose'],
+      tests_require=['nose', 'pymongo'],
       test_suite='nose.collector',
       classifiers=[
           'Intended Audience :: Developers',
