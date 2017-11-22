@@ -23,7 +23,7 @@ setup(name='state_machine',
       license='MIT',
       packages=get_packages(),
       zip_safe=False,
-      tests_require=['nose'],
+      tests_require=['nose', 'pymongo'],
       test_suite='nose.collector',
       classifiers=[
           'Intended Audience :: Developers',
