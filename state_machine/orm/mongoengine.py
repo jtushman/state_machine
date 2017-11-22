@@ -16,7 +16,7 @@ class MongoAdaptor(BaseAdaptor):
         for key in dir(clazz):
             try:
                 value = getattr(clazz, key)
-            except (AttributeError, mongoengine.ConnectionError):
+            except (AttributeError, mongoengine.MongoEngineConnectionError):
                 continue
             results.append((key, value))
         results.sort()
